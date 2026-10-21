@@ -181,6 +181,35 @@ export interface ForecastDay {
   summary?: string;
 }
 
+export type TourProvider = 'viator' | 'getyourguide';
+
+/** A bookable tour listed on Viator or GetYourGuide. product_url has no affiliate params. */
+export interface ProviderTour {
+  id: string;
+  provider: TourProvider;
+  product_code: string;
+  title: string;
+  product_url: string;
+  region_id: string;
+  price_from_usd: number | null;
+  price_basis: string | null;
+  duration_text: string | null;
+  rating: number | null;
+  review_count: number | null;
+  free_cancellation: boolean | null;
+  image_url: string | null;
+  status: Status;
+  sort_order: number;
+  fetched_at: string;
+}
+
+export interface SpotTour {
+  spot_id: string;
+  tour_id: string;
+  link_kind: 'goes_to' | 'nearby' | 'alternative';
+  sort_order: number;
+}
+
 export interface Dataset {
   regions: Region[];
   spots: Spot[];
@@ -194,4 +223,6 @@ export interface Dataset {
   links: PageLink[];
   sources: Source[];
   conditions: SpotConditions[];
+  tours: ProviderTour[];
+  spotTours: SpotTour[];
 }

@@ -6,7 +6,9 @@ import { graph, pageMetadata, spotLd } from '@/lib/seo';
 import { SpotView } from '@/components/views/SpotView';
 
 export const revalidate = 3600;
-export const dynamicParams = false;
+// true: a spot published from /admin renders on first visit, without a rebuild.
+// Unpublished paths still 404 because RLS hides them and the page calls notFound().
+export const dynamicParams = true;
 
 type Params = Promise<{ state: string; region: string; spot: string }>;
 

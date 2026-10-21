@@ -1,6 +1,6 @@
 import type { SpotViewModel } from '@/lib/model';
 import { ACCESS, LEVEL, shortName } from '@/lib/model';
-import { Byline, Crumbs, DraftBanner, ExperienceCard, Faq, JsonLd, SiteFooter, SiteHeader } from '@/components/site';
+import { Byline, Crumbs, DraftBanner, ExperienceCard, Faq, JsonLd, SiteFooter, SiteHeader, NearbyTours } from '@/components/site';
 import { Temperature, VisitTabs, type VisitTab } from '@/components/client';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -52,7 +52,12 @@ export function SpotView({ v, preview, jsonLd }: { v: SpotViewModel; preview: bo
   tabs.push({
     id: 'tour', title: v.canGoAlone ? 'Book a tour' : 'Book your trip', sub: v.canGoAlone ? 'Guides, gear and transport handled' : `${name} is reached by boat or tour`,
     content: v.tours.length ? (
-      <div className="grid grid--wide">{v.tours.map(e => <ExperienceCard key={e.slug} e={e} light />)}</div>
+      <>
+        <div className="grid grid--wide">{v.tours.map(e => <ExperienceCard key={e.slug} e={e} light />)}</div>
+        {v.providerTours.length ? <p style={{ marginTop: 14 }}><a href="#tours">Compare {v.providerTours.length} bookable tours near {name} ↓</a></p> : null}
+      </>
+    ) : v.providerTours.length ? (
+      <p>Compare prices, reviews and free-cancellation options in <a href="#tours">tours near {name}</a> below.</p>
     ) : (
       <p>We&rsquo;re still checking which operators go to {name}. {s.getting_there_text}</p>
     ),
@@ -228,6 +233,14 @@ export function SpotView({ v, preview, jsonLd }: { v: SpotViewModel; preview: bo
           <h2 id="go-h" className="h2">{h2(6, `${name} snorkel tours and conservation experiences`)}</h2>
           <VisitTabs tabs={tabs} />
         </section>
+
+        <NearbyTours
+          tours={v.providerTours}
+          title={`Tours near ${name}`}
+          intro={v.canGoAlone
+            ? `You don't need a tour here, but these handle transport, gear or a guide. Picked from Viator and GetYourGuide.`
+            : `Bookable trips that go to ${name} or nearby, picked from Viator and GetYourGuide.`}
+        />
 
         {/* Nearby + related */}
         {v.nearby.length || v.related.length ? (

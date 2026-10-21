@@ -6,7 +6,9 @@ import { encounterLd, graph, pageMetadata } from '@/lib/seo';
 import { EncounterView } from '@/components/views/EncounterView';
 
 export const revalidate = 3600;
-export const dynamicParams = false;
+// true: a spot published from /admin renders on first visit, without a rebuild.
+// Unpublished paths still 404 because RLS hides them and the page calls notFound().
+export const dynamicParams = true;
 
 type Params = Promise<{ slug: string }>;
 

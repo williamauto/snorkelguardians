@@ -13,7 +13,39 @@ components/client.tsx     interactive parts: °F/°C toggle, "how do you want to
 lib/data.ts               loads all content from Supabase REST (cached, revalidated hourly)
 lib/model.ts              pure functions: database rows -> page view models
 lib/seo.ts                metadata + JSON-LD (TouristAttraction, TouristDestination, ItemList, BreadcrumbList, FAQPage)
+lib/affiliate.ts          adds our Viator / GetYourGuide affiliate IDs (from env) to clean tour URLs
+app/admin/                review dashboard (noindex): verify facts, publish spots, approve tours
+app/api/revalidate/       admin-only: refreshes the site right after a publish
+components/admin/         dashboard UI + a tiny fetch-based Supabase client (anon key + magic link)
 ```
+
+## Admin dashboard (`/admin/`)
+
+Sign in with an email magic link. Only emails listed in the `admins` table get in; everything is enforced in
+the database (RLS + `is_admin()`), so the dashboard only ever uses the public anon key.
+
+Workflow per spot: check the facts against the sources → **Verified (official / secondary)** → **Publish**.
+Publishing a spot also publishes its island, state and home pages if they aren't live yet, then refreshes the site.
+Every action is recorded in `review_log` (Activity tab).
+
+Tabs: Spots (queue + editor with SEO title/meta counters and a Google preview), Nearby tours (approve/hide Viator
+and GetYourGuide listings), Hub pages, Experiences, Activity.
+
+One-time Supabase setup:
+1. Authentication → URL Configuration: Site URL `https://snorkelguardians.com`, add redirect URL `https://snorkelguardians.com/admin/`.
+2. Authentication → Users → **Add user** with your email (the dashboard never creates accounts).
+3. Add your email to admins: `insert into admins (email) values ('you@example.com');` (lowercase).
+
+## Nearby tours (Viator + GetYourGuide)
+
+`provider_tours` holds curated listings (clean product URL, price from, rating, review count, duration, free
+cancellation); `spot_tours` links them to spots (`goes_to`, `nearby`, `alternative`). Spot pages show linked tours
+first, topped up with top-rated tours from the same island, alternating providers. Region pages show the best of the
+region. Only `published` tours are visible.
+
+- Affiliate IDs are **not** stored in the database. The site appends `GYG_PARTNER_ID` / `VIATOR_PID` at render time.
+- Provider ratings are shown with attribution ("4.8 (3,985 on Viator)") and never put in schema.org markup.
+- Prices and ratings were fetched on 2026-10-21; re-run the connector searches to refresh (`fetched_at`).
 
 Every page's title, meta description, H1, H2 outline, FAQs and internal links come from the database
 (`pages`, `faq_items`, `page_links`), so SEO edits never need a code change.
@@ -44,7 +76,8 @@ Project: `snorkelguardians` (`jngqmkldgiqtcgnbpqmn`, us-east-1).
 1. `supabase/migrations/20261021200000_core_schema.sql` — tables, enums, `spot_cards` view
 2. `supabase/migrations/20261021200100_row_level_security.sql` — RLS (public reads published rows only)
 3. `supabase/migrations/20261021200200_seo_links_reviews.sql` — SEO page fields, internal link graph, first-party reviews
-4. `supabase/seed/01_taxonomy.sql` → `05_link_and_faq_fixes.sql` — seed data, in number order
+4. `supabase/migrations/20261021210000_provider_tours_admin.sql` — tours, admins, review log, admin RLS + publish functions
+5. `supabase/seed/01_taxonomy.sql` → `06_nearby_tours.sql` — seed data, in number order
 
 All of these have already been applied to the live project.
 

@@ -9,6 +9,10 @@
 #   NEXT_PUBLIC_SITE_URL       https://snorkelguardians.com
 #   SUPABASE_URL               https://jngqmkldgiqtcgnbpqmn.supabase.co
 #   SUPABASE_ANON_KEY          publishable key (reads published rows only)
+# Affiliate IDs (optional, appended to tour links at render time):
+#   GYG_PARTNER_ID             GetYourGuide partner ID
+#   VIATOR_PID                 Viator partner ID (P00…)
+#   VIATOR_MCID                Viator campaign ID (default 42383)
 # Staging / preview only:
 #   PREVIEW_DRAFTS             "1" to render draft pages (adds noindex everywhere)
 #   SUPABASE_SERVICE_ROLE_KEY  needed to read drafts; never expose to the browser

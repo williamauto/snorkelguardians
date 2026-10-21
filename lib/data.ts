@@ -37,7 +37,7 @@ async function table<T>(name: string, select = '*', filter = ''): Promise<T[]> {
 const notArchived = isPreview ? '&status=neq.archived' : '';
 
 export const loadDataset = cache(async (): Promise<Dataset> => {
-  const [regions, spots, species, spotSpecies, organizations, experiences, spotExperiences, pages, faqs, links, sources, conditions] =
+  const [regions, spots, species, spotSpecies, organizations, experiences, spotExperiences, pages, faqs, links, sources, conditions, tours, spotTours] =
     await Promise.all([
       table<Dataset['regions'][number]>('regions'),
       table<Dataset['spots'][number]>('spots', '*', notArchived),
@@ -51,6 +51,8 @@ export const loadDataset = cache(async (): Promise<Dataset> => {
       table<Dataset['links'][number]>('page_links'),
       table<Dataset['sources'][number]>('sources', 'spot_id,experience_id,url,title,publisher,is_official,accessed_on'),
       table<Dataset['conditions'][number]>('spot_conditions'),
+      table<Dataset['tours'][number]>('provider_tours', '*', notArchived),
+      table<Dataset['spotTours'][number]>('spot_tours'),
     ]);
-  return { regions, spots, species, spotSpecies, organizations, experiences, spotExperiences, pages, faqs, links, sources, conditions };
+  return { regions, spots, species, spotSpecies, organizations, experiences, spotExperiences, pages, faqs, links, sources, conditions, tours, spotTours };
 });

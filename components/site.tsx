@@ -1,6 +1,7 @@
 // Shared, server-safe building blocks. No Next.js imports so they also render in plain React.
 import type { ReactNode } from 'react';
-import type { Crumb, ExperienceCard as Exp } from '@/lib/model';
+import type { Crumb, ExperienceCard as Exp, TourCard as Tour } from '@/lib/model';
+import { affiliateUrl, PROVIDER_NAME } from '@/lib/affiliate';
 import { ACCESS } from '@/lib/model';
 import type { AccessLabel, FaqItem } from '@/lib/types';
 
@@ -166,6 +167,62 @@ export function ExperienceCard({ e, light = false, headingLevel = 3 }: { e: Exp;
           : <span className="badge badge--plain">Booking link coming</span>}
       </div>
     </article>
+  );
+}
+
+const LINK_NOTE: Record<Tour['linkKind'], string | null> = {
+  goes_to: null,
+  nearby: 'Nearby',
+  alternative: 'Alternative',
+  region: null,
+};
+
+/** A Viator / GetYourGuide listing. The rating belongs to the provider: shown with attribution, never in structured data. */
+export function TourCard({ t, headingLevel = 3 }: { t: Tour; headingLevel?: 3 | 4 }) {
+  const H = (headingLevel === 4 ? 'h4' : 'h3') as 'h3';
+  const name = PROVIDER_NAME[t.provider];
+  const note = LINK_NOTE[t.linkKind];
+  return (
+    <article className="tour-card">
+      <div className="tour-card__img">
+        {t.imageUrl ? <img src={t.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" /> : null}
+        <span className={`tour-card__provider tour-card__provider--${t.provider}`}>{name}</span>
+        {note ? <span className="tour-card__note">{note}</span> : null}
+      </div>
+      <div className="tour-card__body">
+        <H>{t.title}</H>
+        <div className="tour-card__meta">
+          {t.rating != null && t.reviewCount > 0
+            ? <span title={`Average rating on ${name}`}>★ {t.rating.toFixed(1)} <span className="muted">({t.reviewCount.toLocaleString('en-US')} on {name})</span></span>
+            : <span className="muted">New on {name}</span>}
+          {t.duration ? <span>⏱ {t.duration}</span> : null}
+          {t.freeCancellation ? <span className="tour-card__free">✓ Free cancellation</span> : null}
+        </div>
+        <div className="tour-card__foot">
+          <span className="tour-card__price">
+            {t.priceFrom != null ? <>From <strong>${Math.round(t.priceFrom)}</strong> <span className="muted">{t.priceBasis ?? ''}</span></> : <span className="muted">See prices</span>}
+          </span>
+          <a className="btn btn--coral tour-card__btn" href={affiliateUrl(t.provider, t.productUrl)} rel="noopener sponsored nofollow" target="_blank">
+            See on {name}
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function NearbyTours({ tours, title, id = 'tours', intro }: { tours: Tour[]; title: string; id?: string; intro?: string }) {
+  if (!tours.length) return null;
+  return (
+    <section id={id} className="section" style={{ paddingBottom: 0 }} aria-labelledby={`${id}-h`}>
+      <h2 id={`${id}-h`} className="h2">{title}</h2>
+      {intro ? <p className="lede" style={{ marginTop: 6 }}>{intro}</p> : null}
+      <div className="tour-grid">{tours.map(t => <TourCard key={t.id} t={t} />)}</div>
+      <p className="tour-disclosure">
+        Prices, ratings and review counts come from Viator and GetYourGuide and can change. We may earn a commission if you book through
+        these links, at no extra cost to you. <a href="/about/affiliate-disclosure/">How we choose tours</a>.
+      </p>
+    </section>
   );
 }
 

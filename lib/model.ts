@@ -2,7 +2,8 @@
 // No framework imports, so the same logic runs in Next.js and in local render checks.
 
 import type {
-  AccessLabel, Dataset, Experience, FaqItem, Page, Region, Source, Species, Spot, SpotConditions, SpotSpecies,
+  AccessLabel, Dataset, Experience, FaqItem, Page, ProviderTour, Region, Source, Species, Spot, SpotConditions, SpotSpecies,
+  TourProvider,
 } from './types';
 
 export interface Crumb { name: string; url: string }
@@ -44,6 +45,23 @@ export interface ExperienceCard {
   meetingPoint: string | null;
   bookingUrl: string | null;
   linkKind?: 'goes_to' | 'nearby' | 'alternative';
+  regionName: string | null;
+}
+
+/** A Viator / GetYourGuide listing. Rating is the provider's: show it with attribution, never in schema markup. */
+export interface TourCard {
+  id: string;
+  provider: TourProvider;
+  title: string;
+  productUrl: string;
+  priceFrom: number | null;
+  priceBasis: string | null;
+  duration: string | null;
+  rating: number | null;
+  reviewCount: number;
+  freeCancellation: boolean;
+  imageUrl: string | null;
+  linkKind: 'goes_to' | 'nearby' | 'alternative' | 'region';
   regionName: string | null;
 }
 
@@ -218,6 +236,42 @@ export class Model {
     return this.d.experiences.filter(e => ids.has(e.region_id)).map(e => this.experienceCard(e));
   }
 
+  tourCard(t: ProviderTour, linkKind: TourCard['linkKind']): TourCard {
+    return {
+      id: t.id, provider: t.provider, title: t.title, productUrl: t.product_url,
+      priceFrom: t.price_from_usd == null ? null : Number(t.price_from_usd), priceBasis: t.price_basis,
+      duration: t.duration_text, rating: t.rating == null ? null : Number(t.rating), reviewCount: t.review_count ?? 0,
+      freeCancellation: !!t.free_cancellation, imageUrl: t.image_url, linkKind,
+      regionName: this.regionById.get(t.region_id)?.name ?? null,
+    };
+  }
+
+  /**
+   * Tours for a spot: the ones linked to it first (goes_to, then nearby/alternative),
+   * topped up with other tours from the same island/city so the section is never empty.
+   * Providers are interleaved so neither Viator nor GetYourGuide crowds out the other.
+   */
+  toursForSpot(spot: Spot, limit = 6): TourCard[] {
+    const order = { goes_to: 0, nearby: 1, alternative: 2 } as const;
+    const linked = this.d.spotTours
+      .filter(st => st.spot_id === spot.id)
+      .map(st => ({ st, t: this.d.tours.find(t => t.id === st.tour_id) }))
+      .filter((x): x is { st: typeof x.st; t: ProviderTour } => !!x.t)
+      .sort((a, b) => order[a.st.link_kind] - order[b.st.link_kind] || a.st.sort_order - b.st.sort_order)
+      .map(x => this.tourCard(x.t, x.st.link_kind));
+    const seen = new Set(linked.map(c => c.id));
+    const fill = this.d.tours
+      .filter(t => t.region_id === spot.region_id && !seen.has(t.id))
+      .sort(byTourQuality)
+      .map(t => this.tourCard(t, 'region'));
+    return interleave([...linked, ...fill]).slice(0, limit);
+  }
+
+  toursIn(regionId: string, limit = 8): TourCard[] {
+    const ids = new Set([regionId, ...this.d.regions.filter(r => r.parent_id === regionId).map(r => r.id)]);
+    return interleave(this.d.tours.filter(t => ids.has(t.region_id)).sort(byTourQuality).map(t => this.tourCard(t, 'region'))).slice(0, limit);
+  }
+
   conditions(spotId: string): SpotConditions | undefined {
     return this.d.conditions.find(c => c.spot_id === spotId);
   }
@@ -225,6 +279,28 @@ export class Model {
   sources(spotId: string): Source[] {
     return this.d.sources.filter(s => s.spot_id === spotId);
   }
+}
+
+function byTourQuality(a: ProviderTour, b: ProviderTour) {
+  // Curated order first, then a rating weighted by review volume.
+  const score = (t: ProviderTour) => (Number(t.rating ?? 0) - 3) * Math.log10((t.review_count ?? 0) + 1);
+  return a.sort_order - b.sort_order || score(b) - score(a);
+}
+
+/** Keep relative order but alternate providers where possible (V, G, V, G...). */
+function interleave(cards: TourCard[]): TourCard[] {
+  const out: TourCard[] = [];
+  const pool = [...cards];
+  let last: TourProvider | null = null;
+  while (pool.length) {
+    // keep "goes_to" ahead of looser matches; only alternate within the same tier
+    const tier = pool[0].linkKind;
+    let i = pool.findIndex(c => c.linkKind === tier && c.provider !== last);
+    if (i < 0) i = 0;
+    const [c] = pool.splice(i, 1);
+    out.push(c); last = c.provider;
+  }
+  return out;
 }
 
 // ---------- page view models ----------
@@ -241,6 +317,7 @@ export interface SpotViewModel {
   conditions: SpotConditions | null;
   canGoAlone: boolean;
   tours: ExperienceCard[];
+  providerTours: TourCard[];
   conservation: ExperienceCard[];
   nearby: SpotSummary[];
   related: LinkOut[];
@@ -299,6 +376,7 @@ export function spotView(m: Model, path: string): SpotViewModel | undefined {
     conditions: m.conditions(spot.id) ?? null,
     canGoAlone: spot.entry_method !== 'boat' && !spot.guide_required,
     tours: cards.filter(c => !c.isConservation || c.kind === 'boat_snorkel' || c.kind === 'guided_snorkel' || c.kind === 'kayak_snorkel'),
+    providerTours: m.toursForSpot(spot),
     conservation: cards.filter(c => c.isConservation),
     nearby,
     related: m.links(page.id, 'related'),
@@ -316,6 +394,7 @@ export interface RegionViewModel {
   spots: SpotSummary[];
   childRegions: { name: string; url: string; summary: string | null; spotCount: number; highlights: string[] }[];
   experiences: ExperienceCard[];
+  providerTours: TourCard[];
   related: LinkOut[];
   faqs: FaqItem[];
   waterTempC: number | null;
@@ -341,6 +420,7 @@ export function regionView(m: Model, path: string): RegionViewModel | undefined 
     crumbs: m.breadcrumbs(region),
     spots, childRegions,
     experiences: m.experiencesIn(region.id),
+    providerTours: m.toursIn(region.id),
     related: m.links(page.id, 'related'),
     faqs: m.faqs(page.id),
     waterTempC: temps.length ? Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10 : null,

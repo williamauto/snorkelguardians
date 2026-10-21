@@ -1,6 +1,6 @@
 import type { RegionViewModel } from '@/lib/model';
 import { ACCESS, LEVEL, cToF } from '@/lib/model';
-import { Byline, Crumbs, DraftBanner, ExperienceCard, Faq, JsonLd, SiteFooter, SiteHeader } from '@/components/site';
+import { Byline, Crumbs, DraftBanner, ExperienceCard, Faq, JsonLd, NearbyTours, SiteFooter, SiteHeader } from '@/components/site';
 import { SpotMap } from '@/components/client';
 
 export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview: boolean; jsonLd: string }) {
@@ -85,6 +85,12 @@ export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview
             </div>
           </section>
         ) : null}
+
+        <NearbyTours
+          tours={v.providerTours}
+          title={`Top-rated snorkel tours in ${v.region.name}`}
+          intro="Boat, kayak and guided trips from Viator and GetYourGuide, chosen for the spots in this guide."
+        />
 
         <section className="section" style={{ paddingBottom: 0 }} aria-labelledby="kind-h">
           <h2 id="kind-h" className="h2">{h2(6, `How to snorkel ${v.region.name} responsibly`)}</h2>
