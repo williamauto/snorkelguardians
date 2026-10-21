@@ -1,5 +1,8 @@
 import type { HomeViewModel } from '@/lib/model';
 import { ExperienceCard, JsonLd, SiteFooter, SiteHeader, DraftBanner } from '@/components/site';
+import { SurfaceScene } from '@/components/ocean/surface';
+import { ReefFilters, ReefFloor, School } from '@/components/ocean/reef';
+import { DepthGauge, OceanParticles } from '@/components/ocean/client';
 
 const ENCOUNTERS = [
   { icon: '🐢', name: 'Sea turtles', where: 'Hanauma Bay, Kahaluu, Black Rock, Maunalua Bay', when: 'Year-round', how: 'From shore at most Hawaii spots; boat for offshore reefs', rule: 'Stay at least 10 ft (3 m) away. Never touch or chase.', href: '/encounters/snorkel-with-turtles-hawaii/', cta: 'Snorkel with turtles in Hawaii', tint: '#1C5A60' },
@@ -10,51 +13,19 @@ const ENCOUNTERS = [
   { icon: '🪸', name: 'Coral reefs and wrecks', where: 'Biscayne National Park, Molokini Crater', when: 'Calm, low-wind days', how: 'Boat only', rule: 'Float, never stand. One kick can break decades of growth.', href: '/florida/miami/biscayne-national-park/', cta: 'Snorkel Biscayne', tint: '#1A6A73' },
 ];
 
-function SurfaceArt() {
-  return (
-    <div className="surface__art" aria-hidden="true">
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 120, background: '#9FD9E8' }} />
-      <svg className="wave" viewBox="0 0 2880 60" preserveAspectRatio="none" style={{ position: 'absolute', top: 96, left: 0, width: '200%', height: 48 }}>
-        <path d="M0 30 Q 90 0 180 30 T 360 30 T 540 30 T 720 30 T 900 30 T 1080 30 T 1260 30 T 1440 30 T 1620 30 T 1800 30 T 1980 30 T 2160 30 T 2340 30 T 2520 30 T 2700 30 T 2880 30 V60 H0Z" fill="#12AA9C" />
-      </svg>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 140, bottom: 0, background: '#0E7C82' }} />
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 380, bottom: 0, background: '#0B6870' }} />
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 580, bottom: 0, background: '#0A5257' }} />
-      <svg className="rays" viewBox="0 0 1440 780" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-        <g fill="#EAFBF8"><polygon points="300,140 380,140 560,780 340,780" /><polygon points="760,140 820,140 1000,780 820,780" /><polygon points="1120,140 1170,140 1320,780 1180,780" /></g>
-      </svg>
-      <svg className="drift" viewBox="0 0 160 90" style={{ position: 'absolute', top: 300, left: 0, width: 150, height: 85, opacity: .55 }}>
-        <g fill="#062A2E"><ellipse cx="80" cy="45" rx="42" ry="26" /><ellipse cx="132" cy="42" rx="14" ry="10" /><path d="M60 26 L30 2 L48 30Z" /><path d="M60 64 L30 88 L48 60Z" /><path d="M104 28 L120 8 L112 32Z" /><path d="M104 62 L120 82 L112 58Z" /></g>
-      </svg>
-      <svg viewBox="0 0 1440 260" preserveAspectRatio="none" style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 260 }}>
-        <path d="M0 200 C160 170 260 215 420 190 S700 160 860 195 S1180 175 1440 190 V260 H0Z" fill="#C9B27E" />
-        <g fill="#08464B">
-          <path className="kelp" d="M90 210 C80 150 110 110 96 40 C120 100 112 160 112 210Z" />
-          <path className="kelp" d="M130 210 C122 170 146 140 134 80 C156 130 150 175 150 210Z" style={{ animationDelay: '-2s' }} />
-          <path className="kelp" d="M1300 200 C1290 140 1320 100 1306 20 C1334 90 1324 150 1324 200Z" style={{ animationDelay: '-3s' }} />
-          <path className="kelp" d="M1350 205 C1342 160 1366 120 1356 70 C1378 120 1372 170 1372 205Z" style={{ animationDelay: '-1s' }} />
-        </g>
-        <g fill="#E67F5C" opacity=".9"><circle cx="320" cy="196" r="26" /><circle cx="352" cy="186" r="18" /><circle cx="1060" cy="190" r="30" /><circle cx="1100" cy="198" r="20" /></g>
-        <g fill="#FF9E7F" opacity=".85"><path d="M560 200 L572 140 L584 200Z M590 200 L604 120 L618 200Z M624 200 L634 156 L644 200Z" /><path d="M880 200 L890 150 L900 200Z M906 200 L918 128 L930 200Z" /></g>
-      </svg>
-      {[[12, 10, 9, 0], [22, 6, 7, -3], [48, 14, 11, -5], [67, 8, 8, -1], [84, 12, 10, -6]].map(([left, size, dur, delay]) => (
-        <span key={left} className="bubble" style={{ left: `${left}%`, width: size, height: size, animationDuration: `${dur}s`, animationDelay: `${delay}s` }} />
-      ))}
-    </div>
-  );
-}
-
 export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: boolean; jsonLd: string }) {
   return (
     <>
       <JsonLd data={jsonLd} />
       <DraftBanner show={preview} />
 
-      {/* SURFACE */}
-      <section className="surface" aria-label="Snorkel Guardians">
-        <SurfaceArt />
+      <ReefFilters />
+
+      {/* SURFACE: half above, half below the waterline */}
+      <section className="hero-dive" aria-label="Snorkel Guardians">
+        <SurfaceScene />
         <SiteHeader overlay />
-        <div className="container surface__copy">
+        <div className="container hero-dive__copy">
           <div className="eyebrow">Snorkeling for everyone</div>
           <h1>{v.page?.h1 ? <>Put your face in the water. <em>The reef will do the rest.</em></> : 'Snorkel Guardians'}</h1>
           <p>
@@ -70,12 +41,20 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
         <div className="scroll-hint" aria-hidden="true">SCROLL TO DIVE</div>
       </section>
 
+      {/* THE DIVE: one body of water that gets darker as you scroll */}
+      <div id="dive" className="dive">
+      <OceanParticles />
+      <DepthGauge maxMeters={30} />
+      <div className="dive__light" aria-hidden="true">
+        {[6, 19, 33, 47, 61, 78, 90].map((l, i) => <span key={l} style={{ left: `${l}%`, animationDelay: `${-i * 1.3}s`, width: `${70 + (i % 3) * 50}px` }} />)}
+      </div>
+
       {/* 3 m: SHALLOWS */}
-      <section className="scene scene--shallows caustic" aria-labelledby="shallows-h">
+      <section className="scene scene--shallows" aria-labelledby="shallows-h">
         <div className="container">
           <div className="eyebrow"><span className="depth-tag">3 m</span>The shallows</div>
           <h2 id="shallows-h" className="h-section">Snorkeling isn&rsquo;t only for strong swimmers</h2>
-          <p className="lede" style={{ color: 'var(--ink)' }}>
+          <p className="lede">
             Plenty of the best spots are calm, shallow and a few steps from the sand. Every guide tells you up front how you get in, how deep
             it is, what it costs and whether it&rsquo;s calm today.
           </p>
@@ -90,6 +69,9 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
           </p>
         </div>
       </section>
+
+      {/* the bottom at 3 m: white sand and coral */}
+      <ReefFloor id="shallow-reef" seed={11} height={420} />
 
       {/* 6 m: REEF / DESTINATIONS */}
       <section id="destinations" className="scene scene--reef" aria-labelledby="dest-h">
@@ -121,8 +103,7 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
 
       {/* 12 m: THE BLUE / ENCOUNTERS */}
       <section id="encounters" className="scene scene--blue" aria-labelledby="enc-h">
-        <span className="bubble" aria-hidden="true" style={{ left: '6%', width: 9, height: 9, animationDuration: '12s' }} />
-        <span className="bubble" aria-hidden="true" style={{ left: '93%', width: 12, height: 12, animationDuration: '14s', animationDelay: '-6s' }} />
+        <School top="4%" duration={70} delay={-20} scale={1.4} count={22} color="#A9C8D2" />
         <div className="container">
           <div className="eyebrow"><span className="depth-tag">12 m</span>The blue</div>
           <h2 id="enc-h" className="h-section" style={{ color: '#F5FDFB' }}>Who you might meet, and how to meet them well</h2>
@@ -179,6 +160,10 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
           </ol>
         </div>
       </section>
+
+      {/* the reef again, far below: blue-shifted and dim */}
+      <ReefFloor id="deep-reef" seed={23} height={300} deep />
+      </div>
 
       <SiteFooter />
     </>

@@ -324,3 +324,139 @@ img { max-width: 100%; display: block; }
 .tour-card__price strong { font-size: 18px; }
 .tour-card__btn { min-height: 38px; padding: 8px 14px; font-size: 14px; }
 .tour-disclosure { font-size: 13px; color: var(--ink-soft); margin-top: 12px; max-width: 80ch; }
+
+/* =====================================================================
+   HOME v2 — a realistic dive: over-under hero, continuous water column,
+   white sand and coral, bubbles, caustic light and a depth gauge.
+   ===================================================================== */
+@keyframes seaWave { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+@keyframes seaBob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(5px) } }
+@keyframes seaCloud { from { transform: translateX(-40vw) } to { transform: translateX(120vw) } }
+@keyframes seaGlitter { 0%, 100% { opacity: .95 } 50% { opacity: .1 } }
+@keyframes seaCaustic { from { background-position: 0 0, 0 0 } to { background-position: 360px 180px, -640px 320px } }
+@keyframes seaMirror { from { background-position: 0 0 } to { background-position: -600px 0 } }
+@keyframes seaRay { 0% { opacity: .12; transform: translateX(-14px) skewX(-14deg) } 100% { opacity: .5; transform: translateX(14px) skewX(-10deg) } }
+@keyframes seaRise { 0% { transform: translateY(0); opacity: 0 } 10% { opacity: .9 } 100% { transform: translateY(-62vh) translateX(10px); opacity: 0 } }
+@keyframes turtleSwim { 0% { transform: translate(-280px, 0) rotate(2deg) } 50% { transform: translate(50vw, -26px) rotate(-3deg) } 100% { transform: translate(calc(100vw + 40px), 10px) rotate(2deg) } }
+@keyframes flapFront { 0%, 100% { transform: rotate(-16deg) } 50% { transform: rotate(10deg) } }
+@keyframes flapFront2 { 0%, 100% { transform: rotate(16deg) } 50% { transform: rotate(-10deg) } }
+@keyframes flapBack { 0%, 100% { transform: rotate(5deg) } 50% { transform: rotate(-5deg) } }
+@keyframes schoolL { from { transform: translateX(100vw) } to { transform: translateX(-280px) } }
+@keyframes schoolR { from { transform: translateX(-280px) scaleX(-1) } to { transform: translateX(100vw) scaleX(-1) } }
+@keyframes fishWiggle { 0%, 100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-2px) rotate(4deg) } }
+@keyframes fishSwimL { from { transform: translateX(1700px) } to { transform: translateX(-120px) } }
+@keyframes fishSwimR { from { transform: translateX(-120px) } to { transform: translateX(1700px) } }
+@keyframes fishHover { 0%, 100% { transform: translate(0, 0) } 50% { transform: translate(-6px, -4px) } }
+@keyframes reefSway { 0%, 100% { transform: rotate(-3deg) } 50% { transform: rotate(3deg) } }
+@keyframes hintBob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(6px) } }
+
+/* ---------- hero ---------- */
+.hero-dive { --wl: 31%; position: relative; isolation: isolate; min-height: max(760px, 100svh); display: flex; flex-direction: column; overflow: hidden; background: #1E9FB2; color: #F5FDFB; }
+.hero-dive .site-header { z-index: 3; }
+.hero-dive__copy { position: relative; z-index: 2; margin-top: auto; padding-top: 40px; padding-bottom: 12vh; text-shadow: 0 2px 22px rgba(3, 45, 60, .45); }
+.hero-dive__copy h1 { font-size: clamp(40px, 5.6vw, 74px); line-height: 1.02; margin-top: 14px; max-width: 13em; }
+.hero-dive__copy h1 em { color: #FFE2D2; }
+.hero-dive__copy p { font-size: 19px; color: #EFFCFB; max-width: 36em; margin-top: 20px; }
+.hero-dive .eyebrow { color: #E6FFFB; }
+.hero-dive .btn--ghost { backdrop-filter: blur(6px); }
+.scroll-hint { position: absolute; z-index: 2; right: 24px; bottom: 28px; font-size: 12px; font-weight: 800; letter-spacing: .14em; color: #E6FFFB; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: hintBob 2.4s ease-in-out infinite; }
+.scroll-hint::after { content: ''; width: 2px; height: 40px; background: linear-gradient(#E6FFFB, transparent); }
+
+.sea { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.sea__sky { position: absolute; left: 0; right: 0; top: 0; height: var(--wl); overflow: hidden; background: linear-gradient(180deg, #5DB6E6 0%, #9BD6F3 52%, #D9F1FA 100%); }
+.sea__sun { position: absolute; right: 13%; top: 12%; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, #FFFEF6 0 18%, rgba(255, 250, 225, .75) 28%, rgba(255, 244, 210, .25) 48%, rgba(255, 244, 210, 0) 70%); }
+.sea__cloud { position: absolute; height: 46px; border-radius: 50%; background: radial-gradient(ellipse at 50% 65%, rgba(255, 255, 255, .95) 0%, rgba(255, 255, 255, .6) 40%, rgba(255, 255, 255, 0) 72%); filter: blur(5px); animation: seaCloud 140s linear infinite; }
+.sea__island { position: absolute; left: 0; bottom: calc(24% - 1px); width: 100%; height: 56px; }
+.sea__far { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; background: linear-gradient(180deg, #2E9DBE 0%, #43B4CC 100%); }
+.sea__glitter { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 24%; }
+.sea__glitter ellipse { animation: seaGlitter 1.8s ease-in-out infinite; }
+
+.sea__line { position: absolute; left: 0; right: 0; top: calc(var(--wl) - 28px); height: 64px; z-index: 2; animation: seaBob 5.5s ease-in-out infinite; }
+.sea__wave { position: absolute; left: 0; width: 200%; height: 60px; }
+.sea__wave--back { top: -6px; animation: seaWave 30s linear infinite; }
+.sea__wave--mid { top: 0; animation: seaWave 21s linear infinite reverse; }
+.sea__wave--front { top: 6px; animation: seaWave 14s linear infinite; }
+
+.sea__under { position: absolute; left: 0; right: 0; top: calc(var(--wl) + 18px); bottom: 0; overflow: hidden; background: linear-gradient(180deg, #3BBCCA 0%, #2DB0C0 12%, #23A4B6 45%, #1E9FB2 100%); }
+.sea__mirror { position: absolute; left: 0; right: 0; top: 0; height: 90px; background: url(/textures/caustics-wide.png) 0 0 / 600px 90px repeat-x, linear-gradient(180deg, rgba(220, 255, 255, .55), rgba(220, 255, 255, 0)); opacity: .7; -webkit-mask-image: linear-gradient(#000, transparent); mask-image: linear-gradient(#000, transparent); animation: seaMirror 18s linear infinite; }
+.sea__caustics { position: absolute; inset: 0; top: 14px; background-image: url(/textures/caustics.png), url(/textures/caustics-wide.png); background-size: 360px 360px, 640px 640px; opacity: .28; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .6) 50%, transparent 95%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .6) 50%, transparent 95%); animation: seaCaustic 26s linear infinite; }
+.sea__rays, .dive__light { pointer-events: none; }
+.sea__rays { position: absolute; inset: 0; }
+.sea__rays span, .dive__light span { position: absolute; top: -8%; height: 115%; background: linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .12) 45%, rgba(255, 255, 255, 0) 85%); filter: blur(12px); mix-blend-mode: screen; transform-origin: top center; animation: seaRay 7s ease-in-out infinite alternate; }
+.sea__bubble { position: absolute; bottom: -20px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, .95) 0 12%, rgba(255, 255, 255, .08) 38%, rgba(210, 250, 255, .25) 80%, rgba(255, 255, 255, .8) 100%); animation: seaRise linear infinite; }
+
+.turtle-swim { position: absolute; top: 5%; left: 0; z-index: 1; animation: turtleSwim 55s linear infinite; animation-delay: -14s; }
+.turtle { width: clamp(150px, 15vw, 230px); height: auto; opacity: .93; filter: saturate(.85) drop-shadow(0 18px 18px rgba(3, 50, 66, .25)); }
+.turtle__flip { transform-box: view-box; }
+.turtle__flip--front { transform-origin: 134px 64px; animation: flapFront 3.4s ease-in-out infinite; }
+.turtle__flip--front2 { transform-origin: 134px 96px; animation: flapFront2 3.4s ease-in-out infinite; }
+.turtle__flip--back { transform-origin: 58px 80px; animation: flapBack 3.4s ease-in-out infinite; }
+
+.school { position: absolute; left: 0; z-index: 1; opacity: .85; animation: schoolL 60s linear infinite; }
+.school--rev { animation-name: schoolR; }
+.school__fish { transform-box: fill-box; transform-origin: center; animation: fishWiggle 1.6s ease-in-out infinite; }
+
+/* ---------- the water column ---------- */
+.dive { position: relative; clip-path: inset(0); overflow: hidden; color: #F5FDFB;
+  background: linear-gradient(180deg, #1E9FB2 0%, #1890A6 11%, #127C97 24%, #0D6584 38%, #0A4F6E 52%, #073B58 66%, #052A42 82%, #03192B 100%); }
+.ocean-particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.dive > section, .dive > .reef-floor { position: relative; z-index: 1; }
+.dive__light { position: absolute; left: 0; right: 0; top: 0; height: 1700px; z-index: 0; overflow: hidden; background-image: url(/textures/caustics.png), url(/textures/caustics-wide.png); background-size: 380px 380px, 680px 680px; opacity: .2; -webkit-mask-image: linear-gradient(transparent 0, #000 14%, rgba(0, 0, 0, .5) 45%, transparent 100%); mask-image: linear-gradient(transparent 0, #000 14%, rgba(0, 0, 0, .5) 45%, transparent 100%); animation: seaCaustic 30s linear infinite; }
+.dive__light span { opacity: .3; }
+.dive ~ .site-footer { background: #03192B; }
+
+.dive .scene { background: transparent; color: #EAF8F6; overflow: visible; }
+.dive .h-section { text-shadow: 0 2px 20px rgba(2, 30, 44, .35); }
+.dive .scene--shallows { color: #F5FDFB; padding-bottom: 20px; }
+.dive .scene--shallows .eyebrow { color: #E6FFFB; }
+.dive .scene--shallows .depth-tag { background: #F5FDFB; color: #0B6E80; }
+.dive .scene--shallows .lede { color: #E3F7F5; }
+.dive .feature { background: rgba(255, 255, 255, .9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 12px 30px -16px rgba(2, 40, 56, .45); }
+.dive .scene--reef { padding-top: 30px; }
+.dive .dest-card { box-shadow: 0 16px 34px -18px rgba(2, 30, 46, .6); }
+.dive .enc-card { background: rgba(6, 46, 64, .72); border-color: rgba(120, 210, 220, .25); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.dive .enc-card__rule { background: rgba(3, 30, 44, .7); }
+
+/* ---------- white sand + coral ---------- */
+.reef-floor { position: relative; width: 100%; height: var(--reef-h, 380px); overflow: hidden; margin: -30px 0 -10px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 90%, transparent 100%); }
+.reef-floor svg { display: block; }
+.reef-floor--deep { margin-top: 10px; }
+.reef-floor--deep svg { filter: saturate(.35) brightness(.42) hue-rotate(-8deg) contrast(1.05); }
+.reef-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: reefSway 6s ease-in-out infinite; }
+.reef-sway--fast { animation-duration: 3.6s; }
+.fish-swim { animation: fishSwimL 40s linear infinite; }
+.fish-swim--rev { animation-name: fishSwimR; }
+.fish-hover { transform-box: fill-box; animation: fishHover 3.2s ease-in-out infinite; }
+
+/* ---------- depth gauge ---------- */
+.gauge { position: fixed; z-index: 20; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 10px; border-radius: 16px; background: rgba(3, 32, 46, .55); border: 1px solid rgba(160, 230, 235, .25); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #E6FFFB; opacity: 0; transition: opacity .4s; pointer-events: none; }
+.gauge--on { opacity: 1; }
+.gauge__read { font-weight: 800; line-height: 1; text-align: center; }
+.gauge__read strong { font-family: var(--font-display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.gauge__read span { font-size: 12px; margin-left: 2px; opacity: .8; }
+.gauge__track { position: relative; width: 2px; height: 170px; background: rgba(230, 255, 251, .35); margin: 4px 0 6px; }
+.gauge__track i { position: absolute; left: -4px; width: 10px; height: 1px; background: rgba(230, 255, 251, .6); }
+.gauge__track i b { position: absolute; right: 14px; top: -7px; font-size: 10px; font-weight: 700; opacity: .7; font-style: normal; }
+.gauge__dot { position: absolute; left: -5px; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: #FF9E7F; box-shadow: 0 0 0 4px rgba(255, 158, 127, .25); transition: top .15s linear; }
+
+@media (max-width: 760px) {
+  .hero-dive { --wl: 22%; min-height: max(720px, 100svh); }
+  .hero-dive__copy { padding-bottom: 9vh; }
+  .hero-dive__copy p { font-size: 17px; }
+  .sea__sun { width: 90px; height: 90px; right: 8%; }
+  .sea__glitter { width: 80%; }
+  .scroll-hint { display: none; }
+  .gauge { top: auto; bottom: 14px; right: 12px; transform: none; padding: 8px 10px; }
+  .gauge__track { display: none; }
+  .reef-floor { height: calc(var(--reef-h, 380px) * .62); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sea *, .sea, .dive__light, .dive__light span, .reef-sway, .fish-swim, .fish-hover, .school, .school__fish, .turtle-swim, .scroll-hint, .sea__line { animation: none !important; }
+  .ocean-particles { display: none; }
+}
+
+/* placeholder "photos" until real images are added: an underwater frame with caustics over white sand */
+.dive .photo, .photo--sea { background-color: #1E9FB2; background-image: url(/textures/caustics.png), linear-gradient(180deg, #4CC5D0 0%, #22A3B6 55%, #1C93A8 100%); background-size: 220px 220px, 100% 100%; position: relative; overflow: hidden; }
+.dive .photo::after, .photo--sea::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 42%; background: url(/textures/sand.jpg) 0 0 / 260px 260px; -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%); mask-image: linear-gradient(180deg, transparent, #000 45%); }
+.dive .photo .photo__label { position: relative; z-index: 1; }
