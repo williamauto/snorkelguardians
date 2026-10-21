@@ -2,6 +2,39 @@
 
 Honest snorkel spot guides with live conditions and reef conservation trips — snorkelguardians.com.
 
+## Website (Next.js)
+
+```
+app/                      routes: /, /[state]/, /[state]/[region]/, /[state]/[region]/[spot]/, /encounters/[slug]/, /about/[slug]/
+  sitemap.ts, robots.ts   only published + indexable pages; AI search crawlers explicitly allowed
+components/views/         one view per page type (Home, Region/State, Spot, Encounter)
+components/site.tsx       header, footer, breadcrumbs, byline, FAQ, experience cards, JSON-LD
+components/client.tsx     interactive parts: °F/°C toggle, "how do you want to go" tabs, Leaflet spot map + filters
+lib/data.ts               loads all content from Supabase REST (cached, revalidated hourly)
+lib/model.ts              pure functions: database rows -> page view models
+lib/seo.ts                metadata + JSON-LD (TouristAttraction, TouristDestination, ItemList, BreadcrumbList, FAQPage)
+```
+
+Every page's title, meta description, H1, H2 outline, FAQs and internal links come from the database
+(`pages`, `faq_items`, `page_links`), so SEO edits never need a code change.
+
+### Environment
+
+See `.env.example` and `netlify.toml`.
+
+- **Production:** `SUPABASE_URL` + `SUPABASE_ANON_KEY`. Only rows with `status = 'published'` are visible (RLS), and only
+  published + `indexable` pages are indexed and listed in the sitemap.
+- **Staging preview of drafts:** also set `PREVIEW_DRAFTS=1` and `SUPABASE_SERVICE_ROLE_KEY` (server-side only). Every page then
+  shows a "preview" banner, gets `noindex`, and robots.txt blocks crawling.
+
+### Run locally
+
+```
+npm install
+cp .env.example .env.local   # fill in keys
+npm run dev
+```
+
 ## Database (Supabase)
 
 Project: `snorkelguardians` (`jngqmkldgiqtcgnbpqmn`, us-east-1).

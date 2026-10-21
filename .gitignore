@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.netlify/
+# local data snapshots (contain draft content)
+snapshot*.json
