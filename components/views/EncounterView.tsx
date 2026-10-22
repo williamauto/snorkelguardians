@@ -29,7 +29,7 @@ export function EncounterView({ v, preview, jsonLd }: { v: EncounterViewModel; p
       <section className="page-hero">
         <div className="container">
           <Crumbs items={v.crumbs} />
-          <h1>{v.page.h1 ?? v.page.title}</h1>
+          <h1>{v.page.h1 || v.page.title}</h1>
           <Byline author={v.page.author} reviewer={v.page.reviewer} updated={v.page.last_content_reviewed_at ?? v.page.updated_at} />
         </div>
       </section>

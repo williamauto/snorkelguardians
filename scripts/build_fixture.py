@@ -15,6 +15,15 @@ SEED = os.path.join(ROOT, "supabase", "seed")
 
 NS = uuid.UUID("6f1d2c8a-0b4e-4c2f-9a3d-1b7e5c9f0000")
 
+# Lookup tables by table name, used to resolve ids from paths/slugs.
+# Populated once at the start of build() so UPDATE statements can resolve
+# scalar subqueries such as (select id from regions p where p.path = v.parent_path).
+_MAPS = {}
+
+
+def _maps():
+    return _MAPS
+
 
 def det_uuid(key):
     return str(uuid.uuid5(NS, key))
@@ -118,8 +127,15 @@ def parse_tuple_list(s, start):
     rows = []
     i = start
     while i < len(s):
-        while i < len(s) and s[i] in " \t\r\n,":
-            i += 1
+        # skip whitespace, commas and -- line comments between tuples
+        while i < len(s):
+            if s[i] in " \t\r\n,":
+                i += 1
+            elif s.startswith("--", i):
+                nl = s.find("\n", i)
+                i = len(s) if nl == -1 else nl + 1
+            else:
+                break
         if i >= len(s) or s[i] != "(":
             break
         fields, i = parse_single_tuple(s, i)
@@ -158,6 +174,11 @@ def eval_expr(expr, alias, aliascols, ctx):
             v = eval_expr(p, alias, aliascols, ctx)
             out += "" if v is None else str(v)
         return out
+    # scalar subquery: (select id from <table> <alias> where <alias>.<col> = v.<col>)
+    m = re.match(r"^\(\s*select\s+id\s+from\s+(\w+)\s+\w+\s+where\s+\w+\.(\w+)\s*=\s*v\.(\w+)\s*\)$", e, re.I)
+    if m:
+        table, keycol, aliascol = m.group(1).lower(), m.group(2), m.group(3)
+        return _lookup_maps(table, alias.get(aliascol))
     m = re.match(r"^(\w+)\.(\w+)$", e)
     if m:
         tbl, col = m.group(1), m.group(2)
@@ -187,6 +208,16 @@ def build():
     tour_by_code = {}
     page_by_path = {}
 
+    _MAPS.update({
+        "regions": region_by_path,
+        "spots": spot_by_slug,
+        "species": species_by_slug,
+        "organizations": org_by_slug,
+        "experiences": exp_by_slug,
+        "provider_tours": tour_by_code,
+        "pages": page_by_path,
+    })
+
     for fname in sorted(os.listdir(SEED)):
         if not fname.endswith(".sql"):
             continue
@@ -209,7 +240,7 @@ def build():
             if not m:
                 continue
             rows, end = find_values_tuple(body, m.start() + len("from (values"))
-            am = re.search(r"as\s+(\w+)\s*\(([^)]*)\)", body[end:end + 400], re.I)
+            am = re.search(r"(?:\bas\s+)?(\w+)\s*\(([^)]*)\)", body[end:end + 400], re.I)
             alias = am.group(1)
             aliascols = [c.strip() for c in am.group(2).split(",")]
             tail = body[end:]
@@ -252,6 +283,7 @@ def build():
                     rec[col] = eval_expr(expr, al, aliascols, ctx)
                 _store(data, table, rec, region_by_path, spot_by_slug, species_by_slug,
                        org_by_slug, exp_by_slug, tour_by_code, page_by_path)
+        apply_updates(sql, data)
     return data
 
 
@@ -306,6 +338,68 @@ def _lookup(table_name, key, data, region_by_path, spot_by_slug, species_by_slug
     return None
 
 
+def _lookup_maps(table_name, key):
+    """Resolve a row id from a path/slug using the shared lookup tables."""
+    m = _MAPS.get(table_name)
+    if not m:
+        return None
+    row = m.get(key)
+    return row["id"] if row else None
+
+
+# ---------------------------------------------------------------- updates
+# UPDATE <table> SET col = expr, ... FROM (VALUES ...) AS v(col, ...)
+# WHERE <table>.<key> = v.<key>;
+#
+# This mirrors exactly what is applied to Supabase, so the enrichment content
+# lives in one place: the SQL seed. The fixture builder applies the same edit
+# to its in-memory rows.
+
+UPD_RE = re.compile(
+    r"update\s+(?P<table>\w+)\s+set\s+(?P<set>[\s\S]*?)\s+"
+    r"from\s*\(\s*values\s*(?P<vals>[\s\S]*?)\s*\)\s*as\s+(?P<alias>\w+)\s*\((?P<cols>[^)]*)\)\s+"
+    r"where\s+(?P<where>[\s\S]*?);",
+    re.I,
+)
+
+
+def apply_updates(sql, data):
+    for m in UPD_RE.finditer(sql):
+        table = m.group("table").lower()
+        alias = m.group("alias")
+        aliascols = [c.strip() for c in m.group("cols").split(",")]
+        rows, _ = parse_tuple_list(m.group("vals"), 0)
+
+        wm = re.match(r"^\s*(\w+)\.(\w+)\s*=\s*v\.(\w+)\s*$", m.group("where"))
+        if not wm:
+            raise SystemExit(f"unsupported update where clause: {m.group('where')[:80]}")
+        keycol, aliascol = wm.group(2), wm.group(3)
+
+        setpairs = []
+        for part in split_top(m.group("set")):
+            if "=" not in part:
+                continue
+            col, expr = part.split("=", 1)
+            setpairs.append((col.strip(), expr.strip()))
+
+        target = data.get(table)
+        if target is None:
+            raise SystemExit(f"update on unknown table {table}")
+
+        for tup in rows:
+            vals = [parse_literal(x) for x in tup]
+            if len(vals) != len(aliascols):
+                raise SystemExit(f"update {table}: tuple arity {len(vals)} != {len(aliascols)}")
+            al = dict(zip(aliascols, vals))
+            keyval = al.get(aliascol)
+            matches = [r for r in target if r.get(keycol) == keyval]
+            if not matches:
+                raise SystemExit(f"update {table}: no row with {keycol} = {keyval!r}")
+            for row in matches:
+                for col, expr in setpairs:
+                    row[col] = eval_expr(expr, al, aliascols, {})
+
+
 def _where_ok(where_txt, al, ctx):
     for cond in re.split(r"\s+and\s+", where_txt):
         cond = cond.strip()
@@ -332,6 +426,9 @@ def _store(data, table, rec, region_by_path, spot_by_slug, species_by_slug,
             "slug": rec.get("slug"), "path": rec.get("path"), "name": rec.get("name"),
             "lat": rec.get("lat"), "lng": rec.get("lng"), "map_zoom": rec.get("map_zoom"),
             "sort_order": rec.get("sort_order") or 0, "summary": rec.get("summary"),
+            "hero_image_url": rec.get("hero_image_url"), "hero_image_credit": rec.get("hero_image_credit"),
+            "highlights": rec.get("highlights") or [], "wetsuit_note": rec.get("wetsuit_note"),
+            "rules_do": rec.get("rules_do") or [], "rules_avoid": rec.get("rules_avoid") or [],
         }
         data["regions"].append(row)
         region_by_path[row["path"]] = row
@@ -369,6 +466,14 @@ def _store(data, table, rec, region_by_path, spot_by_slug, species_by_slug,
             "protected_area_type": rec.get("protected_area_type"), "rules_text": rec.get("rules_text"),
             "summary": rec.get("summary"), "webcam_url": rec.get("webcam_url"),
             "hero_image_url": rec.get("hero_image_url"), "status": "published",
+            "hero_image_credit": rec.get("hero_image_credit"),
+            "highlights": rec.get("highlights") or [],
+            "natural_features": rec.get("natural_features"),
+            "wetsuit_recommendation": rec.get("wetsuit_recommendation"),
+            "water_temp_note": rec.get("water_temp_note"),
+            "rules_do": rec.get("rules_do") or [],
+            "rules_avoid": rec.get("rules_avoid") or [],
+            "conservation_note": rec.get("conservation_note"),
             "data_confidence": rec.get("data_confidence") or "needs_verification",
             "last_checked_at": rec.get("last_checked_at"), "updated_at": "2026-10-21T00:00:00Z",
         }

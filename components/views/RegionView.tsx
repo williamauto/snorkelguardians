@@ -2,6 +2,7 @@ import type { RegionViewModel } from '@/lib/model';
 import { ACCESS, LEVEL, cToF } from '@/lib/model';
 import { Byline, Crumbs, DraftBanner, ExperienceCard, Faq, JsonLd, NearbyTours, SiteFooter, SiteHeader } from '@/components/site';
 import { SpotMap } from '@/components/client';
+import { HeroImage } from '@/components/photos';
 
 export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview: boolean; jsonLd: string }) {
   const h2 = (i: number, fallback: string) => v.page.h2_outline[i] ?? fallback;
@@ -21,13 +22,28 @@ export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview
       <section className="page-hero">
         <div className="container">
           <Crumbs items={v.crumbs} />
-          <h1>{v.page.h1 ?? `Snorkeling in ${v.region.name}`}</h1>
+          <h1>{v.page.h1 || `Snorkeling in ${v.region.name}`}</h1>
           <Byline author={v.page.author} reviewer={v.page.reviewer} updated={v.page.last_content_reviewed_at ?? v.page.updated_at} />
           <div className="hero-stats">
             <div className="hero-stat"><span>Snorkel spots</span><strong>{v.spots.length}</strong></div>
             <div className="hero-stat"><span>On your own</span><strong>{shore}</strong></div>
             {v.waterTempC != null ? <div className="hero-stat"><span>Water now</span><strong>{cToF(v.waterTempC)}°F</strong></div> : null}
           </div>
+          {v.highlights.length ? (
+            <ul className="highlights" style={{ listStyle: 'none', padding: 0 }}>
+              {v.highlights.map(h => <li key={h} className="highlight-chip">{h}</li>)}
+            </ul>
+          ) : null}
+          {v.heroImage ? (
+            <HeroImage
+              className="region-hero"
+              src={v.heroImage}
+              credit={v.heroCredit}
+              alt={`Snorkeling in ${v.region.name}`}
+              sizes="(max-width: 1200px) 100vw, 1152px"
+              priority
+            />
+          ) : null}
         </div>
       </section>
 
@@ -40,7 +56,11 @@ export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview
             <div className="grid" style={{ marginTop: 16 }}>
               {v.childRegions.map(r => (
                 <a key={r.url} href={r.url} className="dest-card card">
-                  <div className="photo"><span className="photo__label">Photo: {r.name}</span></div>
+                  {r.heroImage ? (
+                    <HeroImage className="card-photo" src={r.heroImage} credit={r.heroCredit} alt={`Snorkeling in ${r.name}`} sizes="(max-width: 900px) 100vw, 33vw" />
+                  ) : (
+                    <div className="photo"><span className="photo__label">Photo: {r.name}</span></div>
+                  )}
                   <div className="dest-card__body">
                     <h3>{r.name}</h3>
                     <p>{r.summary}</p>
@@ -92,13 +112,50 @@ export function RegionView({ v, preview, jsonLd }: { v: RegionViewModel; preview
           intro="Boat, kayak and guided trips from Viator and GetYourGuide, chosen for the spots in this guide."
         />
 
+        {v.wetsuit ? (
+          <section className="section" style={{ paddingBottom: 0 }} aria-labelledby="gear-h">
+            <h2 id="gear-h" className="h2">{h2(4, `Gear and water temperature in ${v.region.name}`)}</h2>
+            <div className="facts" style={{ marginTop: 14 }}>
+              <div className="fact">
+                <span className="fact__label">Wetsuit</span>
+                <h3>What to wear</h3>
+                <p>{v.wetsuit}</p>
+              </div>
+              {v.waterTempC != null ? (
+                <div className="fact">
+                  <span className="fact__label">Water temperature</span>
+                  <h3>{cToF(v.waterTempC)}°F ({v.waterTempC}°C)</h3>
+                  <p>Water temperature across the spots in this guide. Check a spot page for the months that matter.</p>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <section className="section" style={{ paddingBottom: 0 }} aria-labelledby="kind-h">
           <h2 id="kind-h" className="h2">{h2(6, `How to snorkel ${v.region.name} responsibly`)}</h2>
-          <div className="grid" style={{ marginTop: 16 }}>
-            <div className="tip"><h3>🧴 Reef-safe sunscreen</h3><p>Use mineral sunscreen or a rash guard. In Hawaii, sunscreens with oxybenzone and octinoxate can&rsquo;t be sold.</p></div>
-            <div className="tip"><h3>🐢 Give wildlife room</h3><p>At least 10 ft (3 m) from turtles; more for seals and sea lions. Never touch, chase or feed.</p></div>
-            <div className="tip"><h3>🪸 Float, never stand</h3><p>Coral is alive. Rest on sand or wear a float vest, and keep your fins up off the reef.</p></div>
-          </div>
+          {v.rulesDo.length || v.rulesAvoid.length ? (
+            <div className="rules">
+              {v.rulesDo.length ? (
+                <div className="rules__panel rules__panel--do">
+                  <h3>✅ Do this here</h3>
+                  <ul>{v.rulesDo.map(r => <li key={r}>{r}</li>)}</ul>
+                </div>
+              ) : null}
+              {v.rulesAvoid.length ? (
+                <div className="rules__panel rules__panel--avoid">
+                  <h3>🚫 Never do this here</h3>
+                  <ul>{v.rulesAvoid.map(r => <li key={r}>{r}</li>)}</ul>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="grid" style={{ marginTop: 16 }}>
+              <div className="tip"><h3>🧴 Reef-safe sunscreen</h3><p>Use mineral sunscreen or a rash guard. In Hawaii, sunscreens with oxybenzone and octinoxate can&rsquo;t be sold.</p></div>
+              <div className="tip"><h3>🐢 Give wildlife room</h3><p>At least 10 ft (3 m) from turtles; more for seals and sea lions. Never touch, chase or feed.</p></div>
+              <div className="tip"><h3>🪸 Float, never stand</h3><p>Coral is alive. Rest on sand or wear a float vest, and keep your fins up off the reef.</p></div>
+            </div>
+          )}
         </section>
 
         {v.related.length ? (

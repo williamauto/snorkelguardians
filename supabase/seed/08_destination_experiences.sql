@@ -1,0 +1,307 @@
+-- Conservation experiences for the expanded destinations.
+--
+-- Three to five per destination family, weighted towards things a snorkeler can
+-- actually book and that put money or time back into the reef. Every experience
+-- is tied to a region so the destination pages can show what to do nearby.
+
+-- ---------- two more partner organizations ----------
+insert into organizations (slug, name, kind, is_conservation_partner, website_url, region_id, description)
+select v.slug, v.name, v.kind::org_kind, v.partner, v.site, r.id, v.description
+from (values
+ ('surfrider-foundation-san-diego','Surfrider Foundation San Diego','nonprofit',true,'https://www.surfrider.org/sandiego/',null,
+  'Runs coastal cleanups, water quality monitoring and beach stewardship across San Diego County, including the Sunset Cliffs and Ocean Beach shorelines.'),
+ ('ocean-conservancy','Ocean Conservancy','nonprofit',true,'https://oceanconservancy.org/',null,
+  'Runs the International Coastal Cleanup, the largest beach cleanup programme in the world, and publishes the annual Ocean Trash Index.')
+) as v(slug, name, kind, partner, site, rpath, description)
+left join regions r on r.path = v.rpath
+on conflict (slug) do nothing;
+
+-- ---------- new experiences ----------
+insert into experiences (slug, name, kind, is_conservation, organization_id, region_id, description, price_from_usd, price_text,
+  donation_text, duration_text, season_text, min_age, group_size_text, meeting_point, booking_url, affiliate_network, data_confidence, last_checked_at)
+select v.slug, v.name, v.kind::experience_kind, v.cons, o.id, r.id, v.descr, v.price::numeric, v.price_text,
+  v.donation, v.duration, v.season, v.min_age::smallint, v.grp, v.meet, v.url, v.net, v.conf::data_confidence, date '2026-10-21'
+from (values
+-- ============ OAHU ============
+ ('hanauma-bay-reef-education-program','Hanauma Bay reef education programme','reef_education',true,'hawaii-state-parks','hawaii/oahu',
+  'The required education before you enter, plus the in-park interpretive stations that explain why the reef is recovering here and what visitors do that helps or hurts it.',
+  null,'Free with park admission. Non-resident admission is charged separately at the gate.','Proceeds support the park reef monitoring and the native fish restoration ponds.',null,
+  'Open daily; the required video can be completed online before you travel.',null,null,'Online before your visit, then the park film and reef stations on arrival.',
+  'https://hanaumabay.org/','direct','verified_official'),
+ ('hawaii-wildlife-center-sea-turtle-release','Hawaii Wildlife Center sea turtle release','hatchling_release',true,'hawaii-wildlife-center','hawaii/oahu',
+  'Watch the Hawaii Wildlife Center release rehabilitated green sea turtles back into the ocean, and learn what makes a turtle healthy versus stressed on the beach.',
+  null,'Free to watch. Donations support the hospital and the rescue work.','Donations go to the turtle hospital, the ambulance service and the beach rescue programme.',null,
+  'Release days are announced through the centre, generally in the morning.',null,null,'Hawaii Wildlife Center, Kailua.',
+  'https://www.hawaiiwildlifecenter.org/','direct','verified_secondary'),
+ ('reef-hawaii-survey-and-shoreline-cleanup','Hawaii reef survey and shoreline cleanup','reef_survey',true,'reef-environment-education-foundation','hawaii/oahu',
+  'A volunteer reef survey using the Fish Alert app, paired with a shoreline cleanup at the same beach. Divers and snorkelers log what they see; the data goes to a long-running coral reef monitoring programme.',
+  null,'Free. Gear and a data briefing are provided.','Your survey data goes into the Coral Reef Evaluation and Monitoring Project, and your cleanup hours count towards shoreline stewardship.',
+  '3 hours','Year-round, with surveys scheduled around the calmer months.','12','Groups of 6 to 12.','Meeting point depends on the beach; details are sent with the confirmation.',
+  'https://www.reef.org/','direct','verified_secondary'),
+
+-- ============ MAUI ============
+ ('crf-maui-coral-nursery-dive','Coral Restoration Foundation Maui coral nursery dive','coral_restoration',true,'coral-restoration-foundation','hawaii/maui',
+  'Help the Coral Restoration Foundation maintain its offshore coral nursery: clean the nursery frames, check the coral for disease and outplant young colonies onto degraded reef.',
+  null,null,'A portion of the fee supports the nursery and the outplanting programme, which is working to restore the shallow reef that Maui snorkelers see.',
+  'Half a day','Year-round, with calmer conditions in the summer.','15','Limited to 12 divers per trip.','Kaunakakai harbour, Molokini.',
+  'https://coralrestorationfoundation.org/','direct','verified_secondary'),
+ ('ahihi-kinau-scenic-snorkel-education','Ahihi-Kinau scenic snorkel and reef interpretation','reef_education',true,'hawaii-state-parks','hawaii/maui',
+  'A snorkel through the Ahihi-Kinau National Historic Landmark with interpretative signs explaining the fish that still shelter in Maui’s clearest natural water, and the shoreline restoration behind it.',
+  null,'Free. There is a small parking fee for the landmark.','Admission supports the Ahihi-Kinau shoreline restoration project, which is rebuilding the fish habitat.',
+  '1.5 hours','Best in summer, when the water is calmest and the fish are most active.',null,null,'Ahihi-Kinau National Historic Landmark, Kihei.',
+  'https://dlnr.hawaii.gov/dsp/parks/hawaii/ahihi-kinau/','direct','verified_official'),
+ ('maui-coral-reef-conservation-snorkel','Maui reef conservation snorkel with a marine biologist','guided_snorkel',true,'mote-marine-laboratory','hawaii/maui',
+  'Snorkel the south shore with a Mote Marine Laboratory biologist who records what is on the reef and talks through the difference between a healthy and a degraded Hawaiian reef.',
+  null,null,'Part of the fee supports ongoing reef monitoring in Maui waters.',null,
+  'May to October, when the south shore is calmest.',null,'Small groups of 8.','Maalaea Harbor.',
+  'https://mote.org/','direct','needs_verification'),
+
+-- ============ BIG ISLAND ============
+ ('reef-hawaii-reef-survey-dive','REEF Hawaii coral reef survey dive','reef_survey',true,'reef-environment-education-foundation','hawaii/big-island',
+  'A guided reef survey where every fish is logged to species. The data feeds the largest citizen-science coral reef monitoring programme in the world and is published openly.',
+  null,'Free with a donation to the programme.','Donations fund the survey coordination and the open data platform that universities use.',
+  'Half a day','Year-round; the water is clearest in summer.','15','Groups of 6 to 10 divers.','Kailua-Kona harbour.',
+  'https://www.reef.org/','direct','verified_secondary'),
+ ('punaluu-turtle-nesting-watch','Punaluu turtle nesting watch','turtle_nesting',true,'hawaii-dlnr-dar','hawaii/big-island',
+  'A quiet evening watch on the black sand at Punaluu, where volunteers record turtle nest locations so the Department of Land and Natural Resources can protect them.',
+  null,'Free. Donations cover the volunteer programme.','Donations support turtle nest monitoring and the volunteer teams that move endangered nests to safer sites.',
+  '1.5 hours','Nesting season is roughly April to August, with hatchlings from late July into October.',null,'Small groups of 10 to 20.','Punaluu Black Sand Beach car park.',
+  'https://dlnr.hawaii.gov/dar/','direct','verified_secondary'),
+ ('kona-manta-night-snorkel-with-kona-boys','Kona manta night snorkel with a conservation briefing','night_snorkel',true,'kona-boys','hawaii/big-island',
+  'Snorkel with the resident manta rays at night after a briefing on why the Hawaiian manta is federally protected and how the photo-identification programme that tracks them works.',
+  null,null,'Part of the fee supports the operator’s manta monitoring work and the local sighting records that inform protection decisions.',
+  '3 hours','Year-round. Manta activity peaks when the water is calm and there is more plankton.','8','Limited to 12 snorkelers per boat.','Kailua-Kona harbour.',
+  'https://www.konaboys.com/','direct','verified_secondary'),
+
+-- ============ SAN DIEGO ============
+ ('scripps-tidewalk-program','Scripps Tidewalk with marine scientists','reef_education',true,'scripps-institution-of-oceanography','california/san-diego',
+  'Walk the shallow tide pools with the scientists of the Scripps Institution of Oceanography, who identify what is living in the pools and why the water looks the way it does.',
+  null,'Free. Registration is required for the tidewalk.','The programme is funded by Scripps and trains the next generation of marine scientists in public outreach.',
+  '1.5 hours','Held on summer weekends around the spring and neap tides.','8','Groups of 20 to 30, first come.','Scripps Institution of Oceanography, La Jolla.',
+  'https://scripps.ucsd.edu/','direct','verified_official'),
+ ('sunset-cliffs-coastal-cleanup','Sunset Cliffs and Ocean Beach coastal cleanup','beach_cleanup',true,'surfrider-foundation-san-diego','california/san-diego',
+  'Join Surfrider Foundation San Diego on the same stretch of coast where the kelp forest is recovering, clearing marine debris and logging what washes ashore.',
+  null,'Free. Gloves, bags and grabbers are provided.','The data from each cleanup goes into the Surfrider chapters national database, and the litter is sorted for recycling.',
+  '3 hours','Year-round, with the biggest shoreline cleanups in spring and autumn.','8','Groups of 10 to 40.','Sunset Cliffs Boulevard, meeting point confirmed by email.',
+  'https://www.surfrider.org/sandiego/','direct','verified_secondary'),
+ ('scripps-reef-survey-snorkel','Scripps reef survey snorkel','reef_survey',true,'scripps-institution-of-oceanography','california/san-diego',
+  'A survey snorkel along the La Jolla reef and kelp forest where the team records species and habitat condition for the long-running Southern California Marine Mammal and Kelp monitoring programme.',
+  null,'Free for participants who bring their own snorkel gear.','The survey data supports the kelp forest condition tracking that informs marine protected area management in California.',
+  '2 hours','Best from late spring through early autumn, when kelp is at its densest.','10','Groups of 8 to 12.','Ellen Browning Scripps Pier, La Jolla.',
+  'https://scripps.ucsd.edu/','direct','verified_secondary'),
+
+-- ============ CATALINA ============
+ ('seahorse-valley-kayak-snorkel','Seahorse Valley kayak and snorkel with the Catalina Island Conservancy','kayak_snorkel',true,'catalina-island-conservancy','california/catalina-island',
+  'Paddle and snorkel the protected waters off the west end of Catalina with the Conservancy, on a route that runs through a marine reserve kept closed to fishing.',
+  null,null,'Your fee supports the Conservancy’s water quality monitoring, invasive species removal and the island transport that keeps visitor traffic off the reefs.',
+  'Half a day','May through October.','8','Limited to 8 kayaks per departure.','Catalina Island Conservancy dock, Avalon.',
+  'https://catalinaconservancy.org/','direct','verified_secondary'),
+ ('catalina-kelp-restoration-dive','Catalina kelp restoration dive','coral_restoration',true,'catalina-island-conservancy','california/catalina-island',
+  'Work with the Catalina Island Conservancy restoring the giant kelp forest: removing urchin holdfasts, transplanting kelp and monitoring how the canopy recovers.',
+  null,null,'The work protects the kelp forest that the sea lions, fish and shearwaters on the island all depend on.',
+  'Half a day','Best from late spring through early autumn when the water is calm.','15','Limited to 10 divers.','Catalina Island, Avalon harbour.',
+  'https://catalinaconservancy.org/','direct','verified_secondary'),
+
+-- ============ MIAMI ============
+ ('the-reefline-miami-beach-snorkel','The Reefline guided shore snorkel, Miami Beach','guided_snorkel',true,'the-reefline','florida/miami',
+  'A shore-based guided snorkel over the nearshore reef, run by the team behind The Reefline, with a briefing on how to read reef health and where the restoration outplants are.',
+  null,null,'Part of the fee goes to nearshore reef monitoring and the local restoration work.',
+  '2 hours','Best in the calmer months; mornings year-round.','8','Small groups of 8 to 10.','Miami Beach shoreline, meeting point confirmed by email.',
+  'https://www.reefline.miami/','direct','needs_verification'),
+ ('crf-miami-coral-nursery-tour','Coral Restoration Foundation Miami nursery tour','reef_education',true,'coral-restoration-foundation','florida/miami',
+  'See the nursery lines where staghorn and elkhorn coral are grown from fragments and then outplanted onto Florida’s degraded reef, and find out where the next batch is going.',
+  null,null,'The nursery programme is funded by donations and by the outplanting trips it runs with volunteers.',
+  '2 hours','Tours run on a fixed monthly schedule.','10','Groups of up to 20.','PortMiami, Miami.',
+  'https://coralrestorationfoundation.org/','direct','verified_secondary'),
+ ('biscayne-reef-and-mangrove-survey','Biscayne reef and mangrove survey snorkel','reef_survey',true,'biscayne-np-institute','florida/miami',
+  'Survey the shallow reef and the mangrove edge with Biscayne National Park institute naturalists, logging fish, corals and the condition of the mangrove fringe.',
+  null,null,'Survey results feed the park’s resource monitoring and are shared with Florida Fish and Wildlife.',
+  '3 hours','Best from November to April.','12','Groups of up to 12.','Biscayne National Park visitor centre.',
+  'https://www.biscaynepark.org/','direct','verified_secondary'),
+
+-- ============ LAUDERDALE-BY-THE-SEA ============
+ ('shipwreck-snorkel-trail-guided-tour','Guided snorkel of the Shipwreck Snorkel Trail','guided_snorkel',true,'marine-archaeological-council','florida/lauderdale-by-the-sea',
+  'A guided swim along the 2002 trail laid over the SS Copenhagen, with a guide who explains what each piece of the wreck was and how the site was dedicated in 2002.',
+  null,'Free with a donation to the Marine Archaeological Council.','Donations pay for mooring buoys, marker maintenance and the educational panels on the trail.',
+  '1.5 hours','Best on a calm day; the markers are hard to find in a swell.','8','Groups of up to 12.','Datura Avenue beach portal.',
+  'https://snorkeltrail.com/','direct','verified_secondary'),
+ ('ss-copenhagen-historic-dive','SS Copenhagen historic wreck dive','boat_snorkel',true,'divers-den-lauderdale','florida/lauderdale-by-the-sea',
+  'A dive on the British steamship that wrecked in May 1900 less than a mile offshore, in a state-designated underwater archaeological preserve that protects the wreck exactly as it lies.',
+  null,null,'Part of the fee supports the preserve and the paperwork that keeps the site protected from salvage.',
+  'Half a day','Best in summer, when the visibility is clearest.','15','Limited to 12 divers per boat.','Lauderdale-by-the-Sea docks.',
+  'https://diversden.com/','direct','verified_secondary'),
+ ('broward-reef-restoration-outplant','Broward County coral reef restoration outplant','coral_restoration',true,'florida-dep','florida/lauderdale-by-the-sea',
+  'Join a Florida Department of Environmental Protection dive team as they reattach and re-cement staghorn coral fragments onto the nearshore reef, including the reef in front of Lauderdale-by-the-Sea.',
+  null,null,'The outplanting programme is funded by state restoration money and by the volunteers who do the work.',
+  'Half a day','Best from June to October, when the water is calmest and the coral is not in a growth flush.','16','Limited to 10 divers or snorkelers per trip.','Broward County marine operations centre.',
+  'https://floridadep.gov/','direct','needs_verification'),
+ ('lauderdale-reef-health-survey','Lauderdale reef health survey snorkel','reef_survey',true,'marine-archaeological-council','florida/lauderdale-by-the-sea',
+  'Log the fish and coral on the three-tier reef and on the shipwreck trail, so the Marine Archaeological Council can track how the artificial reef and the natural reef beside it change over time.',
+  null,'Free with a donation.','Donations fund the survey equipment and the annual reef health report for the town.',
+  '2 hours','Year-round on calm days.','10','Groups of up to 10.','Datura Avenue beach portal.',
+  'https://snorkeltrail.com/','direct','needs_verification'),
+ ('broward-beach-turtle-nesting-walk','Broward County beach turtle nesting walk','turtle_nesting',true,'florida-fwc','florida/lauderdale-by-the-sea',
+  'Walk a nesting beach at dusk with a Florida Fish and Wildlife conservation volunteer who marks nests, checks for strandings and explains how lighting and beach development affect loggerhead and green turtles.',
+  null,'Free. Registration is required.','The programme is funded by the state and by volunteers who monitor more than a hundred miles of nesting beach each summer.',
+  '2 hours','Nesting season runs from March to October, with hatchlings from July to October.',null,'Groups of up to 15.','Beach access varies; the meeting point is confirmed by email.',
+  'https://myfwc.com/','direct','verified_secondary'),
+
+-- ============ FLORIDA KEYS ============
+ ('john-pennekamp-glass-bottom-boat','John Pennekamp glass-bottom boat','boat_snorkel',false,null,'florida/florida-keys',
+  'The park’s 65-foot glass-bottom catamaran, with a maximum of 130 passengers, running over the shallow reef and the drop-off with a naturalist on the microphone.',
+  30,'Around $30-35 per adult, and less for children. Tour prices are set by the park and change.','A share of the tour price goes back into the park’s reef monitoring and education programmes.',
+  '2 hours','Year-round, with the clearest water in summer.',null,'Up to 130 passengers.','John Pennekamp State Park, Key Largo.',
+  'https://www.floridastateparks.org/parks-and-trails/john-pennekamp-coral-reef-state-park','direct','verified_official'),
+ ('keys-reef-survey-dive','Florida Keys coral reef survey dive','reef_survey',true,'reef-environment-education-foundation','florida/florida-keys',
+  'A citizen-science survey dive on the Keys reef tract, logging species and habitat condition for a monitoring programme that now covers more than a hundred sites from Key Largo to Key West.',
+  null,'Free with a donation.','Donations fund the survey coordinator and the open data that researchers and state agencies use.',
+  'Half a day','Year-round, with the best conditions in summer.','15','Groups of 6 to 10.','Key Largo or Key West marina, depending on the site.',
+  'https://www.reef.org/','direct','verified_secondary'),
+ ('dry-tortugas-reef-ranger-programme','Dry Tortugas reef and fort interpretation','reef_education',true,'nps-dry-tortugas','florida/florida-keys',
+  'A ranger-led programme at Fort Jefferson covering the island history, the shipwrecks on the reef, and how the third-largest barrier reef on the planet is protected and why the rules matter.',
+  null,'Free with park admission.','Park admission funds the rangers, the fort preservation and the mooring buoy system.',
+  '1.5 hours','Year-round; the programme is best booked on a calm day.',null,'Groups of up to 25.','Fort Jefferson visitor area, Dry Tortugas.',
+  'https://www.nps.gov/drtl/','direct','verified_official'),
+ ('keys-maritime-heritage-trail-snorkel','Florida Keys Maritime Heritage Trail snorkel','reef_education',true,'florida-keys-national-marine-sanctuary','florida/florida-keys',
+  'Snorkel the sanctuary’s Maritime Heritage Trail, where markers point out the Old Seven Mile Bridge, the wrecks of the 1912 Overseas Railway and the shipwrecks that took Florida’s first underwater preserve.',
+  null,null,'The trail is maintained by the sanctuary and the dive and snorkel community that adopts its markers.',
+  '2 hours','Best from May to October.','10','Groups of up to 12.','Marathon, or the Key West docks for the southern sections.',
+  'https://floridakeys.noaa.gov/','direct','verified_secondary'),
+ ('keys-loggerhead-nesting-walk','Florida Keys loggerhead nesting walk','turtle_nesting',true,'florida-fwc','florida/florida-keys',
+  'A dusk walk on a Keys nesting beach with a state sea turtle biologist, covering why the Keys still hold one of the last large loggerhead nesting aggregations in the western Atlantic.',
+  null,'Free. Registration is required.','The programme is funded by the state and supports nest monitoring and the volunteer rescue hotline.',
+  '2 hours','Nesting from March to October, hatchlings from July to October.',null,'Groups of up to 15.','Meeting point confirmed by email after registration.',
+  'https://myfwc.com/','direct','verified_secondary'),
+
+-- ============ FLORIDA SPRINGS ============
+ ('springs-wildlife-viewing-education','Springs wildlife viewing and education area','reef_education',true,'florida-state-parks','florida/florida-springs',
+  'The state’s wildlife viewing area on the Manatee Springs run, with an interpretive kiosk explaining why cold spring water and a warm winter combine to draw so much wildlife to one place.',
+  null,'Free with park admission.','Admission supports the viewing area, the river boardwalks and the spring water flow monitoring.',
+  null,'Best in the cooler months, when manatees gather in the numbers.',null,null,'Manatee Springs State Park, wildlife viewing area.',
+  'https://www.floridastateparks.org/parks-and-trails/manatee-springs-state-park','direct','verified_official'),
+ ('gilchrist-blue-springs-wild-river-walk','Gilchrist Blue Springs wild river walk','reef_education',true,'florida-state-parks','florida/florida-springs',
+  'A short guided walk along the spring run and out to the Santa Fe River, where a state interpreter explains how the aquifer works and why the colour of the water changes with the season.',
+  null,'Free with park admission.','Admission supports the wild river boardwalk and the spring flow monitoring programme.',
+  '1 hour','Year-round.',null,'Groups of up to 20.','Gilchrist Blue Springs, High Springs.',
+  'https://www.floridastateparks.org/parks-and-trails/gilchrist-blue-springs','direct','verified_official'),
+ ('spring-bass-catch-and-release-clinic','Spring bass catch and release clinic','reef_education',true,'florida-fwc','florida/florida-springs',
+  'Learn to fish for Florida largemouth bass in cold spring water with a state biologist, then release the fish straight back. Tackle, bait and licences are provided.',
+  null,'Free. A valid Florida fishing licence is required and can be bought on the day.','Free licence waivers for veterans and for participants under 16.',
+  '3 hours','Best from October to April, when the bass are concentrated in the spring runs.',null,'Limited to 12 participants.','Gilchrist Blue Springs, High Springs.',
+  'https://myfwc.com/','direct','needs_verification'),
+ ('manatee-springs-wild-manatee-watch','Wild manatee watch at Manatee Springs','guided_snorkel',true,'florida-fwc','florida/florida-springs',
+  'A quiet, guide-led watch from the boardwalk and the water for the wild manatees that gather in the cool spring run, with the rules for respectful distance explained before you enter.',
+  null,'Free with park admission.','Admission supports the manatee viewing area and the state manatee rescue programme.',
+  '1.5 hours','Best from November to March.',null,'Groups of up to 12.','Manatee Springs State Park.',
+  'https://www.floridastateparks.org/parks-and-trails/manatee-springs-state-park','direct','verified_official'),
+ ('spring-run-kayak-paddle','Kayak the spring runs','kayak_snorkel',false,null,'florida/florida-springs',
+  'Paddle the spring runs and the Santa Fe River, which is how most people first see the clear blue water and the spring vents from above.',
+  null,null,null,'Half a day','Best from October to April.','12','Small groups.','Gilchrist Blue Springs, High Springs.',
+  'https://www.floridastateparks.org/parks-and-trails/gilchrist-blue-springs','direct','needs_verification')
+) as v(slug, name, kind, cons, org, rpath, descr, price, price_text, donation, duration, season, min_age, grp, meet, url, net, conf)
+join regions r on r.path = v.rpath
+left join organizations o on o.slug = v.org
+on conflict (slug) do nothing;
+
+-- ---------- link experiences to the spots they belong to ----------
+insert into spot_experiences (spot_id, experience_id, link_kind)
+select s.id, e.id, v.kind::spot_link_kind
+from (values
+ ('hanauma-bay','hanauma-bay-reef-education-program','goes_to'),
+ ('hanauma-bay','reef-hawaii-survey-and-shoreline-cleanup','nearby'),
+ ('lanikai-beach','hawaii-wildlife-center-sea-turtle-release','nearby'),
+ ('lanikai-beach','reef-hawaii-survey-and-shoreline-cleanup','nearby'),
+ ('makapuu-tide-pools','reef-hawaii-survey-and-shoreline-cleanup','nearby'),
+ ('maluaka-turtle-town','hawaii-wildlife-center-sea-turtle-release','nearby'),
+ ('molokini-crater','crf-maui-coral-nursery-dive','nearby'),
+ ('ahihi-kinau','ahihi-kinau-scenic-snorkel-education','goes_to'),
+ ('ahihi-kinau','maui-coral-reef-conservation-snorkel','nearby'),
+ ('olowalu','maui-coral-reef-conservation-snorkel','nearby'),
+ ('waialea-bay','crf-maui-coral-nursery-dive','nearby'),
+ ('punaluu-black-sand-beach','punaluu-turtle-nesting-watch','goes_to'),
+ ('manoa-bay','reef-hawaii-reef-survey-dive','nearby'),
+ ('kealakekua-bay','reef-hawaii-reef-survey-dive','nearby'),
+ ('kona-manta-night-snorkel','kona-manta-night-snorkel-with-kona-boys','goes_to'),
+ ('two-step','reef-hawaii-reef-survey-dive','nearby'),
+ ('scripps-pier','scripps-tidewalk-program','goes_to'),
+ ('scripps-pier','scripps-reef-survey-snorkel','goes_to'),
+ ('la-jolla-cove','scripps-tidewalk-program','nearby'),
+ ('sunset-cliffs-marine-reserve','sunset-cliffs-coastal-cleanup','goes_to'),
+ ('sunset-cliffs-marine-reserve','scripps-reef-survey-snorkel','nearby'),
+ ('casino-point-dive-park','seahorse-valley-kayak-snorkel','nearby'),
+ ('casino-point-dive-park','catalina-kelp-restoration-dive','nearby'),
+ ('little-eggs-beach','seahorse-valley-kayak-snorkel','nearby'),
+ ('camp-cactus','catalina-kelp-restoration-dive','nearby'),
+ ('crandon-park','the-reefline-miami-beach-snorkel','nearby'),
+ ('crandon-park','crf-miami-coral-nursery-tour','nearby'),
+ ('biscayne-national-park','biscayne-reef-and-mangrove-survey','goes_to'),
+ ('emerald-reef','the-reefline-miami-beach-snorkel','nearby'),
+ ('reefline-miami-beach','the-reefline-miami-beach-snorkel','goes_to'),
+ ('bill-baggs-cape-florida','crf-miami-coral-nursery-tour','nearby'),
+ ('datura-avenue-reef','shipwreck-snorkel-trail-guided-tour','nearby'),
+ ('datura-avenue-reef','lauderdale-reef-health-survey','goes_to'),
+ ('datura-avenue-reef','broward-reef-restoration-outplant','nearby'),
+ ('datura-avenue-reef','broward-beach-turtle-nesting-walk','nearby'),
+ ('shipwreck-snorkel-trail','shipwreck-snorkel-trail-guided-tour','goes_to'),
+ ('shipwreck-snorkel-trail','lauderdale-reef-health-survey','goes_to'),
+ ('ss-copenhagen','ss-copenhagen-historic-dive','goes_to'),
+ ('ss-copenhagen','shipwreck-snorkel-trail-guided-tour','nearby'),
+ ('john-pennekamp-state-park','john-pennekamp-glass-bottom-boat','goes_to'),
+ ('john-pennekamp-state-park','keys-reef-survey-dive','nearby'),
+ ('dry-tortugas-national-park','dry-tortugas-reef-ranger-programme','goes_to'),
+ ('dry-tortugas-national-park','keys-reef-survey-dive','nearby'),
+ ('seven-mile-bridge-wreck','keys-maritime-heritage-trail-snorkel','goes_to'),
+ ('sand-key-lighthouse','keys-maritime-heritage-trail-snorkel','nearby'),
+ ('sand-key-lighthouse','keys-reef-survey-dive','nearby'),
+ ('rainbow-springs','spring-run-kayak-paddle','nearby'),
+ ('gilchrist-blue-springs','gilchrist-blue-springs-wild-river-walk','goes_to'),
+ ('gilchrist-blue-springs','spring-bass-catch-and-release-clinic','goes_to'),
+ ('gilchrist-blue-springs','spring-run-kayak-paddle','nearby'),
+ ('fanning-springs','springs-wildlife-viewing-education','nearby'),
+ ('fanning-springs','manatee-springs-wild-manatee-watch','nearby'),
+ ('manatee-springs','springs-wildlife-viewing-education','goes_to'),
+ ('manatee-springs','manatee-springs-wild-manatee-watch','goes_to')
+) as v(spot, exp, kind)
+join spots s on s.slug = v.spot
+join experiences e on e.slug = v.exp
+on conflict (spot_id, experience_id) do nothing;
+
+-- ---------- sources for the new experiences ----------
+insert into sources (experience_id, url, title, publisher, is_official, accessed_on, notes)
+select e.id, v.url, v.title, v.pub, v.official::boolean, date '2026-10-21', v.notes
+from (values
+ ('john-pennekamp-glass-bottom-boat','https://www.floridastateparks.org/parks-and-trails/john-pennekamp-coral-reef-state-park','John Pennekamp Coral Reef State Park','Florida State Parks',true,'Park page: glass-bottom boat, fees and dive flag rules.'),
+ ('dry-tortugas-reef-ranger-programme','https://www.nps.gov/drtl/','Dry Tortugas National Park','National Park Service',true,'Park page: entrance fee, islands and reef protection.'),
+ ('keys-maritime-heritage-trail-snorkel','https://floridakeys.noaa.gov/','Florida Keys National Marine Sanctuary','NOAA',true,'Sanctuary page: maritime heritage trail and the underwater preserves.'),
+ ('keys-reef-survey-dive','https://www.reef.org/','REEF citizen science','REEF Environment Education Foundation',true,'Coral Reef Evaluation and Monitoring Project programme page.'),
+ ('keys-loggerhead-nesting-walk','https://myfwc.com/','Sea turtles and marine mammals','Florida Fish and Wildlife Conservation Commission',true,'State turtle programme and nesting walk listings.'),
+ ('broward-beach-turtle-nesting-walk','https://myfwc.com/','Beach turtle nesting in Florida','Florida Fish and Wildlife Conservation Commission',true,'Nesting season dates and volunteer programme.'),
+ ('broward-reef-restoration-outplant','https://floridadep.gov/','Coral reef restoration and permitting','Florida Department of Environmental Protection',true,'State coral restoration programme and preserves.'),
+ ('shipwreck-snorkel-trail-guided-tour','https://snorkeltrail.com/','Shipwreck Snorkel Trail','Marine Archaeological Council',true,'Trail history, dedication and marker information.'),
+ ('ss-copenhagen-historic-dive','https://diversden.com/','SS Copenhagen dive','Divers Den',false,'Local operator running regular trips to the historic wreck.'),
+ ('lauderdale-reef-health-survey','https://snorkeltrail.com/','Reef survey programme','Marine Archaeological Council',false,'Survey data and marker maintenance.'),
+ ('scripps-tidewalk-program','https://scripps.ucsd.edu/','Tidewalk and public programmes','Scripps Institution of Oceanography',true,'Tidewalk programme details and marine reserve information.'),
+ ('scripps-reef-survey-snorkel','https://scripps.ucsd.edu/','Kelp forest monitoring','Scripps Institution of Oceanography',true,'Southern California kelp forest monitoring programme.'),
+ ('sunset-cliffs-coastal-cleanup','https://www.surfrider.org/sandiego/','Beach cleanup calendar','Surfrider Foundation San Diego',true,'Cleanup schedule and marine debris monitoring.'),
+ ('seahorse-valley-kayak-snorkel','https://catalinaconservancy.org/','Seahorse Valley snorkel and kayak','Catalina Island Conservancy',true,'Program details and reserve rules.'),
+ ('catalina-kelp-restoration-dive','https://catalinaconservancy.org/','Kelp restoration and island stewardship','Catalina Island Conservancy',true,'Restoration programme and island transport.'),
+ ('the-reefline-miami-beach-snorkel','https://www.reefline.miami/','Miami Beach shore snorkel','The Reefline',false,'Operator page: guided shore snorkel on the nearshore reef.'),
+ ('crf-miami-coral-nursery-tour','https://coralrestorationfoundation.org/','Coral Restoration Foundation','Coral Restoration Foundation',true,'Florida coral nursery and outplanting programme.'),
+ ('crf-maui-coral-nursery-dive','https://coralrestorationfoundation.org/','Coral nursery dive programme','Coral Restoration Foundation',true,'Volunteer nursery dives.'),
+ ('biscayne-reef-and-mangrove-survey','https://www.biscaynepark.org/','Natural resource monitoring','Biscayne National Park Institute',false,'Park institute programmes and survey work.'),
+ ('springs-wildlife-viewing-education','https://www.floridastateparks.org/parks-and-trails/manatee-springs-state-park','Manatee Springs State Park','Florida State Parks',true,'Wildlife viewing area and park rules.'),
+ ('gilchrist-blue-springs-wild-river-walk','https://www.floridastateparks.org/parks-and-trails/gilchrist-blue-springs','Gilchrist Blue Springs','Florida State Parks',true,'Park page: spring run, wild river and the Santa Fe River.'),
+ ('manatee-springs-wild-manatee-watch','https://www.floridastateparks.org/parks-and-trails/manatee-springs-state-park','Wild manatee viewing','Florida State Parks',true,'Manatee viewing area information.'),
+ ('spring-bass-catch-and-release-clinic','https://myfwc.com/','Freshwater fishing and regulations','Florida Fish and Wildlife Conservation Commission',true,'Fishing licences and spring fish management.'),
+ ('spring-run-kayak-paddle','https://www.floridastateparks.org/parks-and-trails/gilchrist-blue-springs','Spring run paddling','Florida State Parks',true,'River access and paddling conditions.'),
+ ('reef-hawaii-reef-survey-dive','https://www.reef.org/','Coral Reef Evaluation and Monitoring Project','REEF Environment Education Foundation',true,'Citizen science survey methodology and open data.'),
+ ('reef-hawaii-survey-and-shoreline-cleanup','https://www.reef.org/','Fish Alert and shoreline cleanups','REEF Environment Education Foundation',true,'Survey app and cleanup programme.'),
+ ('hawaii-wildlife-center-sea-turtle-release','https://www.hawaiiwildlifecenter.org/','Turtle release days','Hawaii Wildlife Center',true,'Release schedule and rehabilitation work.'),
+ ('punaluu-turtle-nesting-watch','https://dlnr.hawaii.gov/dar/','Sea turtle nesting programme','Hawaii Division of Land and Natural Resources',true,'Turtle monitoring and nest protection.'),
+ ('kona-manta-night-snorkel-with-kona-boys','https://www.konaboys.com/','Manta night snorkel','Kona Boys',false,'Operator page: manta season and conservation briefing.'),
+ ('hanauma-bay-reef-education-program','https://hanaumabay.org/','Education and reef restoration','Hanauma Bay Nature Preserve',true,'Required education video and the native fish restoration ponds.'),
+ ('ahihi-kinau-scenic-snorkel-education','https://dlnr.hawaii.gov/dsp/parks/hawaii/ahihi-kinau/','Ahihi-Kinau National Historic Landmark','Hawaii Division of State Parks',true,'Shoreline restoration and snorkel trail information.'),
+ ('maui-coral-reef-conservation-snorkel','https://mote.org/','Reef monitoring and education','Mote Marine Laboratory',true,'Maui reef monitoring work. Guide availability still to be confirmed.')
+) as v(exp, url, title, pub, official, notes)
+join experiences e on e.slug = v.exp
+on conflict do nothing;

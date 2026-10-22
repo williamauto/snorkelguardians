@@ -8,6 +8,7 @@
 # them locally gives us real data to design and verify against.
 #
 # Usage:  scripts/local_pg.sh
+#         KEEP=1 scripts/local_pg.sh   # leave the throwaway server running for debugging
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,6 +18,9 @@ PGSOCK="${PGSOCK:-/tmp/sg-pgsock}"
 PGPORT="${PGPORT:-55432}"
 export PATH="$PGBIN:$PATH"
 # macOS: postgres refuses to start unless the locale is valid.
+# The C locale is used for startup, but the cluster itself is UTF8 so that
+# char_length() matches Supabase (a SQL_ASCII cluster counts multi-byte
+# characters as several and would fail length checks that pass in production).
 export LC_ALL=C
 
 if [ ! -x "$PGBIN/initdb" ]; then
@@ -26,9 +30,12 @@ fi
 
 rm -rf "$PGDATA" "$PGSOCK"
 mkdir -p "$PGDATA" "$PGSOCK"
-initdb -D "$PGDATA" -U postgres --auth=trust >/dev/null
+# a server left behind by an earlier KEEP=1 run must be stopped before its data
+# directory is wiped, or psql keeps talking to the old postmaster on the port
+pg_ctl -D "$PGDATA" stop -m immediate >/dev/null 2>&1 || true
+initdb -D "$PGDATA" -U postgres --auth=trust -E UTF8 --locale=C >/dev/null
 pg_ctl -D "$PGDATA" -o "-k $PGSOCK -p $PGPORT -c listen_addresses=''" -l "$PGDATA/server.log" start >/dev/null
-cleanup() { pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1 || true; }
+cleanup() { [ "${KEEP:-0}" = "1" ] || pg_ctl -D "$PGDATA" stop -m fast >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
 psql() { command psql -h "$PGSOCK" -p "$PGPORT" -U postgres -d postgres -v ON_ERROR_STOP=1 "$@"; }

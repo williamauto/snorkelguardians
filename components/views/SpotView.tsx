@@ -89,9 +89,15 @@ export function SpotView({ v, preview, jsonLd }: { v: SpotViewModel; preview: bo
             </div>
             <div className="spot-hero__copy">
               <div className="eyebrow">Snorkel spot · {s.area_label ?? v.region.name}, {v.state?.name ?? v.region.name}</div>
-              <h1>{v.page.h1 ?? `${name} snorkeling guide`}</h1>
+              <h1>{v.page.h1 || `${name} snorkeling guide`}</h1>
               <Byline author={v.page.author} reviewer={v.page.reviewer} updated={v.page.last_content_reviewed_at ?? s.last_checked_at} />
               {s.summary ? <p className="spot-hero__lead">{s.summary}</p> : null}
+              {v.highlights.length ? (
+                <ul className="highlights" style={{ listStyle: 'none', padding: 0 }}>
+                  {v.highlights.map(h => <li key={h} className="highlight-chip">{h}</li>)}
+                </ul>
+              ) : null}
+              {v.heroCredit ? <p className="spot-hero__credit">{v.heroCredit}</p> : null}
               <div className="cta-row" style={{ marginTop: 18 }}>
                 <a className="btn btn--coral" href="#go">Plan my visit</a>
                 <a className="btn btn--ghost" href="#conditions">Today&rsquo;s conditions</a>
@@ -122,6 +128,64 @@ export function SpotView({ v, preview, jsonLd }: { v: SpotViewModel; preview: bo
             </table>
           </div>
         </section>
+
+        {/* What makes it worth the trip */}
+        {v.naturalFeatures || v.wetsuit || v.waterTempNote || v.conservationNote ? (
+          <section className="section" style={{ paddingBottom: 0 }} aria-labelledby="facts-h">
+            <h2 id="facts-h" className="h2">What makes {name} worth the trip</h2>
+            <div className="facts" style={{ marginTop: 14 }}>
+              {v.naturalFeatures ? (
+                <div className="fact">
+                  <span className="fact__label">Reef and habitat</span>
+                  <h3>What you are swimming over</h3>
+                  <p>{v.naturalFeatures}</p>
+                </div>
+              ) : null}
+              {v.wetsuit ? (
+                <div className="fact">
+                  <span className="fact__label">Wetsuit</span>
+                  <h3>What to wear</h3>
+                  <p>{v.wetsuit}</p>
+                </div>
+              ) : null}
+              {v.waterTempNote ? (
+                <div className="fact">
+                  <span className="fact__label">Water temperature</span>
+                  <h3>How warm it really gets</h3>
+                  <p>{v.waterTempNote}</p>
+                </div>
+              ) : null}
+              {v.conservationNote ? (
+                <div className="fact">
+                  <span className="fact__label">Conservation</span>
+                  <h3>Why this place matters</h3>
+                  <p>{v.conservationNote}</p>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {/* House rules for this specific spot */}
+        {v.rulesDo.length || v.rulesAvoid.length ? (
+          <section className="section" style={{ paddingBottom: 0 }} aria-labelledby="rules-h">
+            <h2 id="rules-h" className="h2">House rules at {name}</h2>
+            <div className="rules">
+              {v.rulesDo.length ? (
+                <div className="rules__panel rules__panel--do">
+                  <h3>✅ Do this</h3>
+                  <ul>{v.rulesDo.map(r => <li key={r}>{r}</li>)}</ul>
+                </div>
+              ) : null}
+              {v.rulesAvoid.length ? (
+                <div className="rules__panel rules__panel--avoid">
+                  <h3>🚫 Never do this</h3>
+                  <ul>{v.rulesAvoid.map(r => <li key={r}>{r}</li>)}</ul>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         {/* Conditions */}
         <section id="conditions" className="section" style={{ paddingBottom: 0 }} aria-labelledby="cond-h">

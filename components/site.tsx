@@ -89,7 +89,9 @@ export function AccessBadge({ access, short = true }: { access: AccessLabel; sho
 }
 
 export function Byline({ author, reviewer, updated }: { author: string | null; reviewer: string | null; updated: string | null }) {
-  const name = author ?? 'Snorkel Guardians team';
+  // An empty string means "not set" in the database, so fall back the same way as a null.
+  const name = author && author.trim() ? author.trim() : 'Snorkel Guardians team';
+  const reviewerName = reviewer && reviewer.trim() ? reviewer.trim() : null;
   const initials = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   // Date-only values (YYYY-MM-DD) are read at noon UTC so they never shift a day in US time zones.
   const parsed = updated ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(updated) ? `${updated}T12:00:00Z` : updated) : null;
@@ -100,7 +102,7 @@ export function Byline({ author, reviewer, updated }: { author: string | null; r
       <div>
         <div>By <strong>{name}</strong></div>
         <div className="byline__meta">
-          {reviewer ? <>Reviewed by {reviewer} · </> : null}
+          {reviewerName ? <>Reviewed by {reviewerName} · </> : null}
           {date ? <>Updated <time dateTime={updated!}>{date}</time> · </> : null}
           <a href="/about/how-we-research/" style={{ color: 'inherit' }}>How we research</a>
         </div>

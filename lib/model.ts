@@ -153,6 +153,31 @@ export class Model {
     return this.d.faqs.filter(f => f.page_id === pageId).sort((a, b) => a.sort_order - b.sort_order);
   }
 
+  /**
+   * Every region at or below the given one. The tree is not flat: Florida holds
+   * South Florida and the Springs, and South Florida holds Miami, Lauderdale and
+   * the Keys, so a state page has to reach two levels down to list its spots.
+   */
+  descendantRegionIds(regionId: string): Set<string> {
+    const ids = new Set<string>([regionId]);
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const r of this.d.regions) {
+        if (r.parent_id && ids.has(r.parent_id) && !ids.has(r.id)) {
+          ids.add(r.id);
+          changed = true;
+        }
+      }
+    }
+    return ids;
+  }
+
+  /** Regions with no children of their own: the destinations a reader would pick from. */
+  leafRegions(): Region[] {
+    const parents = new Set(this.d.regions.map(r => r.parent_id).filter((x): x is string => !!x));
+    return this.d.regions.filter(r => !parents.has(r.id)).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+  }
+
   links(pageId: string, role?: string): LinkOut[] {
     return this.d.links
       .filter(l => l.from_page_id === pageId && (!role || l.role === role) && this.pageById.has(l.to_page_id))
@@ -218,9 +243,9 @@ export class Model {
     };
   }
 
-  /** Spots in a region (or in all child regions of a state) that have a page. */
-  spotsIn(regionId: string): SpotSummary[] {
-    const ids = new Set([regionId, ...this.d.regions.filter(r => r.parent_id === regionId).map(r => r.id)]);
+  /** Spots in a region (or in every region below it) that have a page. */
+  spotsIn(regionId: string, deep = true): SpotSummary[] {
+    const ids = deep ? this.descendantRegionIds(regionId) : new Set([regionId]);
     return this.d.spots
       .filter(s => ids.has(s.region_id))
       .map(s => this.summary(s))
@@ -232,7 +257,7 @@ export class Model {
   }
 
   experiencesIn(regionId: string): ExperienceCard[] {
-    const ids = new Set([regionId, ...this.d.regions.filter(r => r.parent_id === regionId).map(r => r.id)]);
+    const ids = this.descendantRegionIds(regionId);
     return this.d.experiences.filter(e => ids.has(e.region_id)).map(e => this.experienceCard(e));
   }
 
@@ -268,7 +293,7 @@ export class Model {
   }
 
   toursIn(regionId: string, limit = 8): TourCard[] {
-    const ids = new Set([regionId, ...this.d.regions.filter(r => r.parent_id === regionId).map(r => r.id)]);
+    const ids = this.descendantRegionIds(regionId);
     return interleave(this.d.tours.filter(t => ids.has(t.region_id)).sort(byTourQuality).map(t => this.tourCard(t, 'region'))).slice(0, limit);
   }
 
@@ -324,6 +349,15 @@ export interface SpotViewModel {
   regionLink: LinkOut | null;
   faqs: FaqItem[];
   sources: Source[];
+  highlights: string[];
+  naturalFeatures: string | null;
+  wetsuit: string | null;
+  waterTempNote: string | null;
+  rulesDo: string[];
+  rulesAvoid: string[];
+  heroImage: string | null;
+  heroCredit: string | null;
+  conservationNote: string | null;
 }
 
 export function spotView(m: Model, path: string): SpotViewModel | undefined {
@@ -383,6 +417,15 @@ export function spotView(m: Model, path: string): SpotViewModel | undefined {
     regionLink: rp ? { name: `Snorkeling in ${region.name}`, url: rp.url_path } : null,
     faqs: m.faqs(page.id),
     sources: m.sources(spot.id),
+    highlights: spot.highlights ?? [],
+    naturalFeatures: spot.natural_features ?? null,
+    wetsuit: spot.wetsuit_recommendation ?? null,
+    waterTempNote: spot.water_temp_note ?? null,
+    rulesDo: spot.rules_do ?? [],
+    rulesAvoid: spot.rules_avoid ?? [],
+    heroImage: spot.hero_image_url ?? null,
+    heroCredit: spot.hero_image_credit ?? null,
+    conservationNote: spot.conservation_note ?? null,
   };
 }
 
@@ -392,12 +435,21 @@ export interface RegionViewModel {
   isState: boolean;
   crumbs: Crumb[];
   spots: SpotSummary[];
-  childRegions: { name: string; url: string; summary: string | null; spotCount: number; highlights: string[] }[];
+  childRegions: {
+    name: string; url: string; summary: string | null; spotCount: number; highlights: string[];
+    heroImage: string | null; heroCredit: string | null;
+  }[];
   experiences: ExperienceCard[];
   providerTours: TourCard[];
   related: LinkOut[];
   faqs: FaqItem[];
   waterTempC: number | null;
+  highlights: string[];
+  wetsuit: string | null;
+  rulesDo: string[];
+  rulesAvoid: string[];
+  heroImage: string | null;
+  heroCredit: string | null;
 }
 
 export function regionView(m: Model, path: string): RegionViewModel | undefined {
@@ -411,8 +463,12 @@ export function regionView(m: Model, path: string): RegionViewModel | undefined 
     .flatMap(r => {
       const p = m.regionPage(r.id);
       if (!p) return [];
-      const s = m.spotsIn(r.id);
-      return [{ name: r.name, url: p.url_path, summary: r.summary, spotCount: s.length, highlights: s.slice(0, 3).map(x => x.shortName) }];
+      const s = m.spotsIn(r.id, false);
+      return [{
+        name: r.name, url: p.url_path, summary: r.summary, spotCount: s.length,
+        highlights: s.slice(0, 3).map(x => x.shortName),
+        heroImage: r.hero_image_url ?? null, heroCredit: r.hero_image_credit ?? null,
+      }];
     });
   const temps = spots.map(s => m.conditions(s.id)?.water_temp_c).filter((t): t is number => typeof t === 'number');
   return {
@@ -424,6 +480,12 @@ export function regionView(m: Model, path: string): RegionViewModel | undefined 
     related: m.links(page.id, 'related'),
     faqs: m.faqs(page.id),
     waterTempC: temps.length ? Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10 : null,
+    highlights: region.highlights ?? [],
+    wetsuit: region.wetsuit_note ?? null,
+    rulesDo: region.rules_do ?? [],
+    rulesAvoid: region.rules_avoid ?? [],
+    heroImage: region.hero_image_url ?? null,
+    heroCredit: region.hero_image_credit ?? null,
   };
 }
 
@@ -455,9 +517,25 @@ export function encounterView(m: Model, path: string): EncounterViewModel | unde
   };
 }
 
+export interface DestinationCard {
+  name: string;
+  url: string;
+  summary: string | null;
+  spotCount: number;
+  highlights: string[];
+  heroImage: string | null;
+  heroCredit: string | null;
+  stateName: string;
+}
+
 export interface HomeViewModel {
   page: Page | undefined;
-  states: { name: string; url: string; summary: string | null; regions: { name: string; url: string; summary: string | null; spotCount: number; highlights: string[] }[] }[];
+  states: {
+    name: string; url: string; summary: string | null;
+    heroImage: string | null; heroCredit: string | null;
+    regions: { name: string; url: string; summary: string | null; spotCount: number; highlights: string[]; heroImage: string | null; heroCredit: string | null }[];
+  }[];
+  destinations: DestinationCard[];
   encounters: LinkOut[];
   conservation: ExperienceCard[];
   spotCount: number;
@@ -472,11 +550,34 @@ export function homeView(m: Model): HomeViewModel {
       const sp = m.regionPage(st.id);
       if (!sp) return [];
       const rv = regionView(m, sp.url_path);
-      return [{ name: st.name, url: sp.url_path, summary: st.summary, regions: rv?.childRegions ?? [] }];
+      return [{
+        name: st.name, url: sp.url_path, summary: st.summary,
+        heroImage: st.hero_image_url ?? null, heroCredit: st.hero_image_credit ?? null,
+        regions: rv?.childRegions ?? [],
+      }];
     });
+  const destinations = m.leafRegions().flatMap(r => {
+    const p = m.regionPage(r.id);
+    if (!p) return [];
+    const spots = m.spotsIn(r.id, false);
+    // a leaf can still be nested (Miami sits under South Florida): walk up for the state name
+    let top = r;
+    while (top.parent_id) {
+      const parent = m.regionById.get(top.parent_id);
+      if (!parent) break;
+      top = parent;
+    }
+    return [{
+      name: r.name, url: p.url_path, summary: r.summary, spotCount: spots.length,
+      highlights: r.highlights?.length ? r.highlights : spots.slice(0, 3).map(x => x.shortName),
+      heroImage: r.hero_image_url ?? null, heroCredit: r.hero_image_credit ?? null,
+      stateName: top.name,
+    }];
+  });
   return {
     page,
     states,
+    destinations,
     encounters: m.d.pages.filter(p => p.page_type === 'encounter').map(p => ({ name: p.h1 ?? p.target_keyword, url: p.url_path })),
     conservation: m.d.experiences.filter(e => e.is_conservation).map(e => m.experienceCard(e)),
     spotCount: m.d.spots.filter(s => m.spotPage(s.id)).length,

@@ -5,7 +5,9 @@ import json, subprocess, sys, argparse
 # Table -> Dataset key, and the columns the app reads (mirrors lib/types.ts).
 TABLES = {
     "regions": ("regions", ["id", "parent_id", "kind", "slug", "path", "name", "summary",
-                            "lat", "lng", "map_zoom", "sort_order"]),
+                            "lat", "lng", "map_zoom", "sort_order",
+                            "hero_image_url", "hero_image_credit", "highlights",
+                            "wetsuit_note", "rules_do", "rules_avoid"]),
     "spots": ("spots", ["id", "region_id", "slug", "name", "alt_names", "area_label", "lat", "lng",
                         "entry_method", "guide_required", "reservation_required", "entry_fee_usd",
                         "entry_fee_text", "reservation_text", "parking_text", "hours_text",
@@ -13,7 +15,9 @@ TABLES = {
                         "best_season_text", "seasonal_warning", "hazards_text", "gear_text",
                         "protected_area_name", "protected_area_type", "rules_text", "summary",
                         "answer_block", "webcam_url", "hero_image_url", "status", "data_confidence",
-                        "last_checked_at", "updated_at"]),
+                        "last_checked_at", "updated_at",
+                        "highlights", "natural_features", "wetsuit_recommendation", "water_temp_note",
+                        "rules_do", "rules_avoid", "hero_image_credit", "conservation_note"]),
     "species": ("species", ["id", "slug", "common_name", "local_name", "scientific_name", "grp",
                             "protection_text", "distance_rule", "description"]),
     "spot_species": ("spotSpecies", ["spot_id", "species_id", "odds", "season_text"]),
@@ -46,13 +50,89 @@ TABLES = {
 # stand-in, so flip the editorial status to published to exercise real layouts.
 PUBLISH = {"spots": "status", "pages": "status", "experiences": "status", "provider_tours": "status"}
 
+# Indexability and the publication date are editorial decisions made in the admin
+# workflow, so the fixture mirrors the published end state for local builds.
+PUBLISH_EXTRA = {"pages": {"indexable": True, "published_at": "2026-01-15T00:00:00Z"}}
+
+
+NULL_MARKER = "<NULL>"
+
 
 def psql(sock, port, sql):
     out = subprocess.run(
         ["psql", "-h", sock, "-p", str(port), "-U", "postgres", "-d", "postgres",
-         "-At", "-F", "\x1f", "-c", sql],
+         "-At", "-F", "\x1f", "-P", "null=" + NULL_MARKER, "-c", sql],
         capture_output=True, text=True, check=True)
     return [line for line in out.stdout.split("\n") if line != ""]
+
+
+BOOLEAN_TYPES = {"boolean"}
+INTEGER_TYPES = {"smallint", "integer", "bigint"}
+FLOAT_TYPES = {"numeric", "real", "double precision"}
+
+
+def column_types(sock, port):
+    """Column data types for the exported tables, so values keep their JSON types."""
+    names = ", ".join("'%s'" % t for t in TABLES)
+    rows = psql(sock, port,
+                "select table_name, column_name, data_type from information_schema.columns "
+                f"where table_schema = 'public' and table_name in ({names})")
+    types = {}
+    for r in rows:
+        table, column, dtype = r.split("\x1f")
+        types.setdefault(table, {})[column] = dtype
+    return types
+
+
+def coerce(value, dtype):
+    """Turn a psql text value into the JSON type the Supabase REST API would return."""
+    if value == NULL_MARKER:
+        return None
+    if dtype in BOOLEAN_TYPES:
+        return value == "t"
+    if dtype in INTEGER_TYPES:
+        return int(value)
+    if dtype in FLOAT_TYPES:
+        return float(value)
+    return value
+
+
+def parse_pg_array(value):
+    """Parse a Postgres array literal, honouring quoted elements that contain commas."""
+    inner = value[1:-1].strip()
+    if not inner:
+        return []
+    out = []
+    cur = []
+    in_quotes = False
+    i = 0
+    while i < len(inner):
+        ch = inner[i]
+        if in_quotes:
+            if ch == "\\":
+                cur.append(inner[i + 1])
+                i += 2
+                continue
+            if ch == '"':
+                in_quotes = False
+                i += 1
+                continue
+            cur.append(ch)
+            i += 1
+            continue
+        if ch == '"':
+            in_quotes = True
+            i += 1
+            continue
+        if ch == ",":
+            out.append("".join(cur).strip())
+            cur = []
+            i += 1
+            continue
+        cur.append(ch)
+        i += 1
+    out.append("".join(cur).strip())
+    return out
 
 
 def main():
@@ -63,6 +143,7 @@ def main():
     a = ap.parse_args()
 
     dataset = {key: [] for key, _ in TABLES.values()}
+    types = column_types(a.sock, a.port)
     for table, (key, cols) in TABLES.items():
         sel = ", ".join(f'"{c}"' for c in cols)
         rows = psql(a.sock, a.port, f'select {sel} from public.{table}')
@@ -71,15 +152,15 @@ def main():
             vals = r.split("\x1f")
             row = {}
             for c, v in zip(cols, vals):
-                if v == "\\N":
-                    row[c] = None
-                elif v.startswith("{") and v.endswith("}"):
-                    inner = v[1:-1]
-                    row[c] = [] if not inner else inner.split(",")
+                dtype = types.get(table, {}).get(c)
+                if v.startswith("{") and v.endswith("}"):
+                    row[c] = parse_pg_array(v)
                 else:
-                    row[c] = v
+                    row[c] = coerce(v, dtype)
             if table in PUBLISH:
                 row[PUBLISH[table]] = "published"
+            for col, value in PUBLISH_EXTRA.get(table, {}).items():
+                row[col] = value
             out.append(row)
         dataset[key] = out
         print(f"  {table:18s} {len(out)}")

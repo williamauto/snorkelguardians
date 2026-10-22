@@ -17,6 +17,12 @@ export interface Region {
   lng: number | null;
   map_zoom: number | null;
   sort_order: number;
+  hero_image_url: string | null;
+  hero_image_credit: string | null;
+  highlights: string[];
+  wetsuit_note: string | null;
+  rules_do: string[];
+  rules_avoid: string[];
 }
 
 export interface Spot {
@@ -55,6 +61,14 @@ export interface Spot {
   data_confidence: 'verified_official' | 'verified_secondary' | 'needs_verification';
   last_checked_at: string | null;
   updated_at: string;
+  highlights: string[];
+  natural_features: string | null;
+  wetsuit_recommendation: string | null;
+  water_temp_note: string | null;
+  rules_do: string[];
+  rules_avoid: string[];
+  hero_image_credit: string | null;
+  conservation_note: string | null;
 }
 
 export interface Species {

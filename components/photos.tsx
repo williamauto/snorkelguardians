@@ -61,3 +61,31 @@ export function PhotoCreditLine({ credit }: { credit: PhotoCredit }) {
     </span>
   );
 }
+
+/**
+ * A region or spot hero photo. The file is a derived header (cropped and
+ * colour-graded from a licensed original), so the credit line always travels
+ * with it.
+ */
+export function HeroImage({
+  src,
+  credit,
+  alt,
+  sizes,
+  priority,
+  className,
+}: {
+  src: string;
+  credit?: string | null;
+  alt: string;
+  sizes?: string;
+  priority?: boolean;
+  className?: string;
+}) {
+  return (
+    <figure className={`hero-image${className ? ` ${className}` : ''}`}>
+      <Image src={src} alt={alt} fill sizes={sizes ?? '100vw'} priority={priority} />
+      {credit ? <figcaption className="hero-image__credit">{credit}</figcaption> : null}
+    </figure>
+  );
+}

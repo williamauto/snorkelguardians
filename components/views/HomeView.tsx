@@ -3,8 +3,8 @@ import { ExperienceCard, JsonLd, SiteFooter, SiteHeader, DraftBanner } from '@/c
 import { SurfaceScene } from '@/components/ocean/surface';
 import { ReefFilters, ReefFloor, School } from '@/components/ocean/reef';
 import { DepthGauge, OceanParticles } from '@/components/ocean/client';
-import { Photo, PhotoCreditLine } from '@/components/photos';
-import { getPhoto, HERO_PHOTOS, REEF_PHOTOS, TURTLE_PHOTOS, SHARK_PHOTOS, MANTA_PHOTOS, DOLPHIN_PHOTOS, BEACH_PHOTOS, BOAT_PHOTOS, KELP_PHOTOS } from '@/lib/photos';
+import { Photo, PhotoCreditLine, HeroImage } from '@/components/photos';
+import { getPhoto, HERO_PHOTOS, REEF_PHOTOS, TURTLE_PHOTOS, SHARK_PHOTOS, MANTA_PHOTOS, DOLPHIN_PHOTOS, BOAT_PHOTOS, KELP_PHOTOS } from '@/lib/photos';
 
 const ENCOUNTERS = [
   { icon: '🐢', name: 'Sea turtles', where: 'Hanauma Bay, Kahaluu, Black Rock, Maunalua Bay', when: 'Year-round', how: 'From shore at most Hawaii spots; boat for offshore reefs', rule: 'Stay at least 10 ft (3 m) away. Never touch or chase.', href: '/encounters/snorkel-with-turtles-hawaii/', cta: 'Snorkel with turtles in Hawaii', tint: '#1C5A60', photo: TURTLE_PHOTOS[0] },
@@ -89,13 +89,14 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
                 <a href={st.url} style={{ color: '#F5FDFB', fontWeight: 800 }}>Snorkeling in {st.name} →</a>
               </div>
               <div className="grid" style={{ marginTop: 14 }}>
-                {st.regions.map((r, i) => {
-                const pc = getPhoto(BEACH_PHOTOS[i % BEACH_PHOTOS.length]);
+                {st.regions.map((r) => {
                 return (
                   <a key={r.url} href={r.url} className="dest-card">
-                    <div className="photo">
-                      {pc ? <Photo credit={pc} fill sizes="(max-width: 900px) 100vw, 33vw" /> : <span className="photo__label">Photo: {r.name}</span>}
-                    </div>
+                    {r.heroImage ? (
+                      <HeroImage className="card-photo" src={r.heroImage} credit={r.heroCredit} alt={`Snorkeling in ${r.name}`} sizes="(max-width: 900px) 100vw, 33vw" />
+                    ) : (
+                      <div className="photo"><span className="photo__label">Photo: {r.name}</span></div>
+                    )}
                     <div className="dest-card__body">
                       <h4 style={{ fontSize: 24 }}>{r.name}</h4>
                       <p>{r.summary}</p>
@@ -107,6 +108,28 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
               </div>
             </div>
           ))}
+
+          {v.destinations.length ? (
+            <div style={{ marginTop: 46 }}>
+              <h3 style={{ fontSize: 26, color: '#F5FDFB' }}>Every destination we cover</h3>
+              <div className="grid" style={{ marginTop: 14 }}>
+                {v.destinations.map(d => (
+                  <a key={d.url} href={d.url} className="dest-card">
+                    {d.heroImage ? (
+                      <HeroImage className="card-photo" src={d.heroImage} credit={d.heroCredit} alt={`Snorkeling in ${d.name}`} sizes="(max-width: 900px) 100vw, 30vw" />
+                    ) : (
+                      <div className="photo"><span className="photo__label">Photo: {d.name}</span></div>
+                    )}
+                    <div className="dest-card__body">
+                      <h4 style={{ fontSize: 22 }}>{d.name}</h4>
+                      <p>{d.summary}</p>
+                      <p style={{ fontWeight: 700, color: 'var(--ink)' }}>{d.spotCount} spots · {d.stateName}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

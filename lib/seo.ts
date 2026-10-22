@@ -28,7 +28,7 @@ export function pageMetadata(page: Page, opts: { preview: boolean }): Metadata {
       url: abs(page.url_path),
       title: page.title ?? undefined,
       description: page.meta_description ?? undefined,
-      images: page.og_image_url ? [{ url: page.og_image_url }] : undefined,
+      images: page.og_image_url ? [{ url: abs(page.og_image_url) }] : undefined,
     },
     twitter: { card: 'summary_large_image', title: page.title ?? undefined, description: page.meta_description ?? undefined },
   };
@@ -65,7 +65,7 @@ export function spotLd(v: SpotViewModel): Json[] {
     publicAccess: s.entry_method !== 'boat',
     touristType: ['Snorkeling'],
     containedInPlace: s.protected_area_name ? { '@type': 'Place', name: s.protected_area_name } : undefined,
-    image: s.hero_image_url ?? undefined,
+    image: s.hero_image_url ? abs(s.hero_image_url) : undefined,
   };
   return [attraction, breadcrumbLd(v.crumbs), faqLd(v.faqs)].filter(Boolean) as Json[];
 }
