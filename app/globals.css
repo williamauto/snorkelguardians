@@ -491,6 +491,6 @@ img { max-width: 100%; display: block; }
 }
 
 /* placeholder "photos" until real images are added: an underwater frame with caustics over white sand */
-.dive .photo, .photo--sea { background-color: #1E9FB2; background-image: url(/textures/caustics.png), linear-gradient(180deg, #4CC5D0 0%, #22A3B6 55%, #1C93A8 100%); background-size: 220px 220px, 100% 100%; position: relative; overflow: hidden; }
-.dive .photo::after, .photo--sea::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 42%; background: url(/textures/sand.jpg) 0 0 / 260px 260px; -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%); mask-image: linear-gradient(180deg, transparent, #000 45%); }
+.dive .photo:not(:has(img)), .photo--sea { background-color: #1E9FB2; background-image: url(/textures/caustics.png), linear-gradient(180deg, #4CC5D0 0%, #22A3B6 55%, #1C93A8 100%); background-size: 220px 220px, 100% 100%; position: relative; overflow: hidden; }
+.dive .photo:not(:has(img))::after, .photo--sea::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 42%; background: url(/textures/sand.jpg) 0 0 / 260px 260px; -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%); mask-image: linear-gradient(180deg, transparent, #000 45%); }
 .dive .photo .photo__label { position: relative; z-index: 1; }
