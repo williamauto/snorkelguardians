@@ -3,14 +3,16 @@ import { ExperienceCard, JsonLd, SiteFooter, SiteHeader, DraftBanner } from '@/c
 import { SurfaceScene } from '@/components/ocean/surface';
 import { ReefFilters, ReefFloor, School } from '@/components/ocean/reef';
 import { DepthGauge, OceanParticles } from '@/components/ocean/client';
+import { Photo, PhotoCreditLine } from '@/components/photos';
+import { getPhoto, HERO_PHOTOS, REEF_PHOTOS, TURTLE_PHOTOS, SHARK_PHOTOS, MANTA_PHOTOS, DOLPHIN_PHOTOS, BEACH_PHOTOS, BOAT_PHOTOS, KELP_PHOTOS } from '@/lib/photos';
 
 const ENCOUNTERS = [
-  { icon: '🐢', name: 'Sea turtles', where: 'Hanauma Bay, Kahaluu, Black Rock, Maunalua Bay', when: 'Year-round', how: 'From shore at most Hawaii spots; boat for offshore reefs', rule: 'Stay at least 10 ft (3 m) away. Never touch or chase.', href: '/encounters/snorkel-with-turtles-hawaii/', cta: 'Snorkel with turtles in Hawaii', tint: '#1C5A60' },
-  { icon: '🐆', name: 'Leopard sharks', where: 'La Jolla Shores, San Diego', when: 'Summer', how: 'Shore entry, beginner friendly', rule: 'Harmless and shy. Watch from above.', href: '/encounters/leopard-sharks-la-jolla/', cta: 'When and where to see them', tint: '#2C6E5A' },
-  { icon: '🌙', name: 'Manta rays at night', where: 'Keauhou, Kona, Big Island', when: 'Year-round, after dark', how: 'Night boat tour only', rule: 'Float at the surface. Let the mantas come to you.', href: '/hawaii/big-island/kona-manta-night-snorkel/', cta: 'How the manta snorkel works', tint: '#14304A' },
-  { icon: '🐬', name: 'Spinner dolphins', where: 'Kealakekua Bay, Two Step', when: 'Mornings, resting in the bays', how: 'Watch from a distance', rule: 'In Hawaii it is illegal to approach within 50 yards.', href: '/hawaii/big-island/two-step/', cta: 'Snorkel Two Step', tint: '#123F57' },
-  { icon: '🐠', name: 'Garibaldi and kelp forests', where: 'La Jolla Cove, Catalina Island', when: 'Warmest late summer', how: 'Shore entry with a wetsuit', rule: 'Protected marine reserves: take nothing.', href: '/california/', cta: 'Snorkel Southern California', tint: '#2C6E5A' },
-  { icon: '🪸', name: 'Coral reefs and wrecks', where: 'Biscayne National Park, Molokini Crater', when: 'Calm, low-wind days', how: 'Boat only', rule: 'Float, never stand. One kick can break decades of growth.', href: '/florida/miami/biscayne-national-park/', cta: 'Snorkel Biscayne', tint: '#1A6A73' },
+  { icon: '🐢', name: 'Sea turtles', where: 'Hanauma Bay, Kahaluu, Black Rock, Maunalua Bay', when: 'Year-round', how: 'From shore at most Hawaii spots; boat for offshore reefs', rule: 'Stay at least 10 ft (3 m) away. Never touch or chase.', href: '/encounters/snorkel-with-turtles-hawaii/', cta: 'Snorkel with turtles in Hawaii', tint: '#1C5A60', photo: TURTLE_PHOTOS[0] },
+  { icon: '🐆', name: 'Leopard sharks', where: 'La Jolla Shores, San Diego', when: 'Summer', how: 'Shore entry, beginner friendly', rule: 'Harmless and shy. Watch from above.', href: '/encounters/leopard-sharks-la-jolla/', cta: 'When and where to see them', tint: '#2C6E5A', photo: SHARK_PHOTOS[1] },
+  { icon: '🌙', name: 'Manta rays at night', where: 'Keauhou, Kona, Big Island', when: 'Year-round, after dark', how: 'Night boat tour only', rule: 'Float at the surface. Let the mantas come to you.', href: '/hawaii/big-island/kona-manta-night-snorkel/', cta: 'How the manta snorkel works', tint: '#14304A', photo: MANTA_PHOTOS[0] },
+  { icon: '🐬', name: 'Spinner dolphins', where: 'Kealakekua Bay, Two Step', when: 'Mornings, resting in the bays', how: 'Watch from a distance', rule: 'In Hawaii it is illegal to approach within 50 yards.', href: '/hawaii/big-island/two-step/', cta: 'Snorkel Two Step', tint: '#123F57', photo: DOLPHIN_PHOTOS[0] },
+  { icon: '🐠', name: 'Garibaldi and kelp forests', where: 'La Jolla Cove, Catalina Island', when: 'Warmest late summer', how: 'Shore entry with a wetsuit', rule: 'Protected marine reserves: take nothing.', href: '/california/', cta: 'Snorkel Southern California', tint: '#2C6E5A', photo: KELP_PHOTOS[0] },
+  { icon: '🪸', name: 'Coral reefs and wrecks', where: 'Biscayne National Park, Molokini Crater', when: 'Calm, low-wind days', how: 'Boat only', rule: 'Float, never stand. One kick can break decades of growth.', href: '/florida/miami/biscayne-national-park/', cta: 'Snorkel Biscayne', tint: '#1A6A73', photo: REEF_PHOTOS[0] },
 ];
 
 export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: boolean; jsonLd: string }) {
@@ -25,6 +27,7 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
       <section className="hero-dive" aria-label="Snorkel Guardians">
         <SurfaceScene />
         <SiteHeader overlay />
+        {(() => { const c = getPhoto(HERO_PHOTOS[0]); return c ? <div className="hero-dive__bg"><Photo credit={c} fill sizes="100vw" priority /></div> : null; })()}
         <div className="container hero-dive__copy">
           <div className="eyebrow">Snorkeling for everyone</div>
           <h1>{v.page?.h1 ? <>Put your face in the water. <em>The reef will do the rest.</em></> : 'Snorkel Guardians'}</h1>
@@ -39,6 +42,7 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
           </div>
         </div>
         <div className="scroll-hint" aria-hidden="true">SCROLL TO DIVE</div>
+        {(() => { const c = getPhoto(HERO_PHOTOS[0]); return c ? <div className="hero-dive__credit"><PhotoCreditLine credit={c} /></div> : null; })()}
       </section>
 
       {/* THE DIVE: one body of water that gets darker as you scroll */}
@@ -85,16 +89,21 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
                 <a href={st.url} style={{ color: '#F5FDFB', fontWeight: 800 }}>Snorkeling in {st.name} →</a>
               </div>
               <div className="grid" style={{ marginTop: 14 }}>
-                {st.regions.map(r => (
+                {st.regions.map((r, i) => {
+                const pc = getPhoto(BEACH_PHOTOS[i % BEACH_PHOTOS.length]);
+                return (
                   <a key={r.url} href={r.url} className="dest-card">
-                    <div className="photo"><span className="photo__label">Photo: {r.name}</span></div>
+                    <div className="photo">
+                      {pc ? <Photo credit={pc} fill sizes="(max-width: 900px) 100vw, 33vw" /> : <span className="photo__label">Photo: {r.name}</span>}
+                    </div>
                     <div className="dest-card__body">
                       <h4 style={{ fontSize: 24 }}>{r.name}</h4>
                       <p>{r.summary}</p>
                       <p style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.spotCount} spots · {r.highlights.join(', ')}</p>
                     </div>
                   </a>
-                ))}
+                );
+              })}
               </div>
             </div>
           ))}
@@ -109,19 +118,24 @@ export function HomeView({ v, preview, jsonLd }: { v: HomeViewModel; preview: bo
           <h2 id="enc-h" className="h-section" style={{ color: '#F5FDFB' }}>Who you might meet, and how to meet them well</h2>
           <p className="lede">Where each encounter happens, the season, whether you need a boat, and the one rule that matters most.</p>
           <div className="grid" style={{ marginTop: 28, gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))' }}>
-            {ENCOUNTERS.map(e => (
-              <article key={e.name} className="enc-card">
-                <div className="photo" style={{ backgroundColor: e.tint }}><span className="photo__label">Photo: {e.name.toLowerCase()}</span></div>
-                <div className="enc-card__body">
-                  <h3>{e.icon} {e.name}</h3>
-                  <div>📍 {e.where}</div>
-                  <div>🗓️ {e.when}</div>
-                  <div>🚤 {e.how}</div>
-                  <div className="enc-card__rule">💚 {e.rule}</div>
-                  <a href={e.href}>{e.cta} →</a>
-                </div>
-              </article>
-            ))}
+            {ENCOUNTERS.map(e => {
+              const pc = getPhoto(e.photo);
+              return (
+                <article key={e.name} className="enc-card">
+                  <div className="photo" style={{ backgroundColor: e.tint }}>
+                    {pc ? <Photo credit={pc} fill sizes="(max-width: 900px) 100vw, 33vw" /> : <span className="photo__label">Photo: {e.name.toLowerCase()}</span>}
+                  </div>
+                  <div className="enc-card__body">
+                    <h3>{e.icon} {e.name}</h3>
+                    <div>📍 {e.where}</div>
+                    <div>🗓️ {e.when}</div>
+                    <div>🚤 {e.how}</div>
+                    <div className="enc-card__rule">💚 {e.rule}</div>
+                    <a href={e.href}>{e.cta} →</a>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

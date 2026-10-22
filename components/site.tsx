@@ -7,12 +7,7 @@ import type { AccessLabel, FaqItem } from '@/lib/types';
 
 export function Logo({ size = 34 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 30 30" fill="none" aria-hidden="true">
-      <circle cx="15" cy="15" r="15" fill="#FF9E7F" />
-      <path d="M6 16c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0M6 21c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0" stroke="#0B2A2E" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="10" r="1.6" fill="#0B2A2E" />
-      <circle cx="17.5" cy="7.5" r="1" fill="#0B2A2E" />
-    </svg>
+    <img src="/icon.svg" alt="" width={size} height={size} style={{ display: 'block' }} />
   );
 }
 

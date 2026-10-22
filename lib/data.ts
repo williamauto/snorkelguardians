@@ -7,10 +7,23 @@ import type { Dataset } from './types';
 //
 // Production: anon key + RLS, so only published rows come back.
 // Staging:    PREVIEW_DRAFTS=1 + service role key renders drafts (every page gets noindex).
+// Local dev:  SNORKEL_FIXTURE=supabase/dev-fixture.json reads a local snapshot instead
+//             (see scripts/local_pg.sh) so the site can be built with real content
+//             while every live row is still under editorial review.
 
 export const isPreview = process.env.PREVIEW_DRAFTS === '1';
 
 const REVALIDATE_SECONDS = 3600;
+
+// Path to a local JSON snapshot of the dataset. Never set in production.
+const FIXTURE_PATH = process.env.SNORKEL_FIXTURE;
+
+async function loadFixture(): Promise<Dataset> {
+  const { readFile } = await import('node:fs/promises');
+  const path = require('node:path').resolve(process.cwd(), FIXTURE_PATH!);
+  const raw = await readFile(path, 'utf8');
+  return JSON.parse(raw) as Dataset;
+}
 
 function credentials() {
   const url = process.env.SUPABASE_URL;
@@ -37,6 +50,9 @@ async function table<T>(name: string, select = '*', filter = ''): Promise<T[]> {
 const notArchived = isPreview ? '&status=neq.archived' : '';
 
 export const loadDataset = cache(async (): Promise<Dataset> => {
+  if (FIXTURE_PATH) {
+    return loadFixture();
+  }
   const [regions, spots, species, spotSpecies, organizations, experiences, spotExperiences, pages, faqs, links, sources, conditions, tours, spotTours] =
     await Promise.all([
       table<Dataset['regions'][number]>('regions'),
